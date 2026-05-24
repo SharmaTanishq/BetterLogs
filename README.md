@@ -4,12 +4,43 @@ Workflow observability and AI diagnosis for cross-system business processes. Whe
 
 ## Status
 
-Pre-MVP. Planning phase. No code yet.
+MVP build, Week 1. Scaffolding in place; OTLP ingestion is the next implementation milestone.
 
 ## Where to start
 
 - **[`SPEC.md`](SPEC.md)** — the source of truth for what we're building, why, and the 6-week MVP scope.
-- **[`docs/`](docs/)** — deeper technical documents (mostly stubs at this stage, filled in as the MVP takes shape).
+- **[`docs/build-plan.md`](docs/build-plan.md)** — the implementation playbook (tech stack, hosting, repo layout, week-by-week sequence).
+- **[`docs/week-0-investigation.md`](docs/week-0-investigation.md)** — Week 0 questions still open (live doc — fill in answers as they're found).
+- **[`docs/`](docs/)** — deeper technical docs per component.
+
+## Repo layout
+
+```
+apps/api               Fastify service: ingestion + diagnose + resolve + stats
+packages/sdk-node      @betterlog/sdk-node — withWorkflow + recordStep
+packages/shared        Types + OTel attribute constants used by API + SDK
+examples/wilco-order-demo  Smoke-test app exercising the SDK end-to-end
+infra/                 docker-compose (local Postgres + pgvector), migrations
+docs/                  build plan + per-component design docs
+```
+
+## Local dev loop
+
+Prereqs: Node 22+ (`.nvmrc` pins 22), pnpm 10, Docker.
+
+```bash
+pnpm install               # workspace install
+
+cp .env.example .env       # copy local defaults
+pnpm db:up                 # docker compose: postgres + pgvector on :5432
+pnpm db:generate           # generate the first Drizzle migration (once)
+pnpm db:migrate            # apply migrations + enable the vector extension
+
+pnpm --filter @betterlog/api dev                          # API on :4000
+pnpm --filter @betterlog/example-wilco-order-demo start   # exercises the SDK
+```
+
+Health check: `curl http://localhost:4000/health`.
 
 ## Design partner
 

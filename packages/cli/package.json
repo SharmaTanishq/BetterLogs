@@ -1,0 +1,34 @@
+{
+  "name": "@betterlog/cli",
+  "version": "0.1.0",
+  "description": "BetterLog CLI. Talk to the diagnose API from your shell.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "bin": {
+    "betterlog": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.0"
+  }
+}

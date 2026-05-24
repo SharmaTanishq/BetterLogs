@@ -1,0 +1,54 @@
+# Fly.io config for the BetterLog API.
+#
+# App name: betterlog-api (change in step 2 of docs/deploy.md if taken).
+# Region:   bom (Mumbai) — closest to Tanishq's laptop in BLR/UTC+5:30.
+#           Change once Q5 from week-0-investigation.md confirms Wilco's region.
+#
+# Deploy from the REPO ROOT with:
+#   flyctl deploy -c apps/api/fly.toml
+
+app           = "betterlog-api"
+primary_region = "bom"
+
+[build]
+  # Relative to this fly.toml (apps/api/). Build context is set via the
+  # WORKING_DIRECTORY positional arg to `flyctl deploy` (must point at repo root
+  # because the Dockerfile COPYs pnpm-lock.yaml + packages/shared).
+  dockerfile = "Dockerfile"
+
+[deploy]
+  # Run migrations before the new version takes traffic. Idempotent — drizzle
+  # tracks applied migrations in its own metadata table.
+  release_command = "node dist/db/migrate.js"
+
+[env]
+  NODE_ENV  = "production"
+  HOST      = "0.0.0.0"
+  PORT      = "4000"
+  LOG_LEVEL = "info"
+
+[http_service]
+  internal_port       = 4000
+  force_https         = true
+  auto_stop_machines  = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type        = "requests"
+    soft_limit  = 100
+    hard_limit  = 200
+
+  # Cheap probe that doesn't ping the DB on every call.
+  [[http_service.checks]]
+    path     = "/health"
+    interval = "30s"
+    timeout  = "5s"
+    grace_period = "10s"
+    method   = "GET"
+
+[[vm]]
+  size      = "shared-cpu-1x"
+  memory    = "512mb"
+  cpu_kind  = "shared"
+  cpus      = 1

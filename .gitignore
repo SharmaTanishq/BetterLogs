@@ -30,7 +30,11 @@ coverage/
 *.lcov
 
 # Drizzle / SQL artifacts
-drizzle/meta/
+# (drizzle/meta/_journal.json + snapshots ARE committed — required at runtime
+#  by drizzle-orm's migrator to know which migrations exist.)
+
+# TS build info
+*.tsbuildinfo
 
 # Local secrets
 *.pem

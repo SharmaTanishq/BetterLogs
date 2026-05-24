@@ -1,0 +1,42 @@
+{
+  "name": "betterlog",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Workflow observability and AI diagnosis for cross-system business processes.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "db:up": "docker compose -f infra/docker-compose.yml up -d",
+    "db:down": "docker compose -f infra/docker-compose.yml down",
+    "db:logs": "docker compose -f infra/docker-compose.yml logs -f",
+    "db:psql": "docker compose -f infra/docker-compose.yml exec postgres psql -U betterlog -d betterlog",
+    "db:generate": "pnpm --filter @betterlog/api db:generate",
+    "db:migrate": "pnpm --filter @betterlog/api db:migrate",
+    "db:studio": "pnpm --filter @betterlog/api db:studio",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "eslint": "^10.4.0",
+    "prettier": "^3.8.0",
+    "tsx": "^4.22.0",
+    "turbo": "^2.9.0",
+    "typescript": "^6.0.0",
+    "typescript-eslint": "^8.59.0",
+    "vitest": "^4.1.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}

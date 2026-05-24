@@ -26,11 +26,11 @@ The cross-cutting decisions that aren't in those other places live here.
 | **Validation** | Zod + `@fastify/type-provider-zod` | One schema definition flows into route validation, OpenAPI generation (later), and shared types. |
 | **ORM** | Drizzle | Type-safe, close to SQL when you need it, has a `pgvector` helper. Drizzle migrations (`drizzle-kit`) generate SQL from the TS schema; checked into `infra/migrations/`. |
 | **Database** | Postgres 16 + `pgvector` extension | Already committed in `SPEC.md` §3. HNSW index on the embeddings table per the spec DDL. |
-| **Database hosting** | **TBD — see §6 below.** Default recommendation: **Neon.** Alternatives under active consideration: Railway, Render, Supabase. | Decision needs to be made before week 1. |
-| **App hosting** | Fly.io (default). Railway if going all-in-one with Postgres. | Stateful-friendly, single config file (`fly.toml`). Switch to Railway if DB lives there too. |
-| **Agent / LLM client** | Vercel AI SDK (`ai` package) | Clean abstraction over OpenAI / Anthropic / Ollama (matches BYOK requirement in `SPEC.md` §5). Built-in tool-calling primitive. Avoid LangChain — too much abstraction and breakage for a single-agent loop. |
-| **Initial LLM** | Anthropic Claude Sonnet 4.5 (primary), OpenAI as fallback | Sonnet is currently strongest on multi-step tool use with structured outputs. Swap via AI SDK is one-line. |
-| **Embedding model** | `text-embedding-3-small` (OpenAI), 1536 dims | Matches `VECTOR(1536)` in the spec DDL. Cheap; good enough for failure-signature similarity. |
+| **Database hosting** | **Neon** (decided 2026-05-23, see §6). | Built-in pgvector, DB branching for eval harness, $0 at MVP scale. |
+| **App hosting** | Fly.io | Stateful-friendly, single config file (`fly.toml`). Paired with Neon, not Railway-bundled, because branching beats one-dashboard convenience for the Week 5 eval crunch. |
+| **Agent / LLM client** | Vercel AI SDK (`ai` package) | Clean abstraction over OpenAI / Anthropic / Ollama / etc. (matches BYOK requirement in `SPEC.md` §5). Built-in tool-calling primitive. Avoid LangChain — too much abstraction and breakage for a single-agent loop. |
+| **LLM provider** | **BYOK, runtime-selectable.** No "primary" provider. Configured via `BETTERLOG_LLM_PROVIDER` + `BETTERLOG_LLM_MODEL` env vars; the diagnose endpoint reads them at request time. Supported out-of-box: OpenAI, Anthropic, Ollama. | Per `SPEC.md` §5. Adding another provider is a one-line addition in `createModel(...)`. Dev default while iterating: whichever provider's API key is present in `.env`. |
+| **Embedding model** | `text-embedding-3-small` (OpenAI), 1536 dims, for MVP | Matches `VECTOR(1536)` in the spec DDL. Cheap; good enough for failure-signature similarity. Single embedding provider for MVP because vector dimensions are baked into the schema — making this BYOK requires either schema-per-provider or a `provider` tag column on `failure_embeddings`. Deferred until a real customer needs it. |
 | **CLI** | Node, `commander` + `kleur` + `ora` | Distributed as `@betterlog/cli` via npm or tarball. Thin HTTP client over the API. |
 | **OTel ingestion** | The API service itself exposes an OTLP/HTTP receiver endpoint. **No separate OTel Collector for MVP.** | One fewer moving part. Customers who already run a Collector can point theirs at our endpoint later — the wire format is the same. |
 | **Outgoing webhook (alerts)** | Single configurable URL per workspace; the API POSTs a structured payload on workflow failure. Customer wires it to Slack incoming webhook / Discord / PagerDuty as they like. | Replaces the need for a Slack app at MVP per `SPEC.md` §5 + §6. |
@@ -170,22 +170,42 @@ All commands are thin HTTP clients over `betterlog-api`. No server logic lives i
 
 ---
 
-## 6. Database hosting decision (TBD before week 1)
+## 6. Database hosting decision
 
-This is the one open infra decision. All four options work; pick the one whose trade-offs annoy you least.
+**Decided 2026-05-23: Neon (Postgres) + Fly.io (API).**
+
+### Options considered
 
 | Option | MVP cost | pgvector | DB branching | Scale-to-zero | One dashboard with API |
 |---|---|---|---|---|---|
-| **Neon** (recommended default) | $0 (free tier) | Built-in, 1-line enable | Yes (excellent for eval) | Yes | No (API on Fly separately) |
-| **Railway** (managed Postgres + API) | ~$5–15/mo | Needs `pgvector/pgvector:pg16` Docker image | No | No | **Yes** |
-| **Render** | ~$0–7/mo | Built-in | No | No (DB) | **Yes** |
-| **Supabase** | $0 (free tier, pauses after 1wk idle) | Built-in | Limited | No | **Yes** (also gives auth/realtime if ever needed) |
+| **Neon** ✅ chosen | $0 (free tier) | Built-in, 1-line enable | Yes (excellent for eval) | Yes | No (API on Fly separately) |
+| Railway (managed Postgres + API) | ~$5–15/mo | Needs `pgvector/pgvector:pg16` Docker image | No | No | **Yes** |
+| Render | ~$0–7/mo | Built-in | No | No (DB) | **Yes** |
+| Supabase | $0 (free tier, pauses after 1wk idle) | Built-in | Limited | No | **Yes** (also gives auth/realtime if ever needed) |
 
-**Default recommendation:** Neon + Fly. Best Postgres tooling, DB branching is genuinely useful for the eval harness, $0 at MVP scale. The one downside is two dashboards to manage.
+### Why Neon
 
-**If you'd rather have one bill / one dashboard:** Railway is the answer. Trade-off is no branching and ~$10/mo instead of $0. Use the `pgvector/pgvector:pg16` Docker image instead of Railway's default Postgres template.
+The tiebreaker is **Week 5**. Per §7, week 5 is the highest-risk week — the eval-accuracy crunch — and the one most likely to need extra time. The work in that week is rapid iteration on prompts, tool implementations, and tool descriptions against a frozen incident corpus. Two capabilities matter disproportionately during that week:
 
-**Pinned for decision before week 1 kickoff.** Once chosen, update this section and the relevant `fly.toml` / `railway.json` configs.
+1. **DB branching** — fork the prod DB into a throwaway branch per prompt-tuning experiment without rebuilding seed data. Only Neon offers this. None of Railway / Render / Supabase do.
+2. **Scale-to-zero** — the DB sits idle between dogfooding sessions and during off-hours; not paying for idle compute keeps MVP cost firmly in "negligible" territory.
+
+### Why not the others
+
+- **Railway** — the strongest alternative. Its one-dashboard advantage is real, and bundling DB+API in one bill is genuinely nicer to operate. But losing branching during the Week 5 eval crunch is a worse trade than managing one extra dashboard for six weeks. Also requires the `pgvector/pgvector:pg16` Docker image rather than the default Postgres template, which adds a small operational gotcha.
+- **Render** — no advantage over Neon for our shape. Slightly worse free tier, no branching, no scale-to-zero on the DB.
+- **Supabase** — the auto-pause-after-1-week-idle behavior on the free tier is a real footgun for a 6-week project that may have multi-day quiet stretches between Wilco dogfooding sessions. The auth/realtime extras are features we explicitly don't want (per `SPEC.md` §6, no auth, no realtime).
+
+### Trade-off we accept
+
+Two dashboards instead of one (Neon for DB, Fly for API). Acceptable for a 6-week, single-customer build.
+
+### Follow-ups (Week 0 provisioning)
+
+- [ ] Create Neon project `betterlog-mvp`, region: closest to Wilco's primary services (likely `us-east-1` or `eu-central-1` — confirm in kickoff).
+- [ ] Enable `pgvector` extension on the default branch.
+- [ ] Note `DATABASE_URL` — pooled and unpooled — for `apps/api/.env` (gitignored) and Fly secrets.
+- [ ] Decide branch naming convention before Week 5: `main` (prod), `eval-<date>` per eval run, `dev-<name>` for in-progress experiments.
 
 ---
 
@@ -193,11 +213,13 @@ This is the one open infra decision. All four options work; pick the one whose t
 
 Each week has a single concrete exit criterion. If a week slips, cut scope from the *next* week, not from the success criteria in `SPEC.md` §7.
 
-### Week 0 — Kickoff (resolve the unknowns)
-- Walk through the 10 open questions in `SPEC.md` §8 with Wilco. Especially: business keys, RabbitMQ library, deploy event source, historical incidents corpus, CLI distribution.
-- Make the DB hosting decision (§6 above).
-- Provision: GitHub repo, Neon/Railway account, Fly.io account, Anthropic API key, npm scope (`@betterlog`).
-- **Exit:** All 10 spec open questions answered or explicitly deferred. Hosting chosen. Infra accounts provisioned.
+### Week 0 — Investigation (resolve the unknowns)
+- Resolve the 10 open questions in `SPEC.md` §8 by investigating the Wilco stack you already have access to as their dev. Use [`docs/week-0-investigation.md`](./week-0-investigation.md) as the playbook — it tells you, per question, where to grep / which file to read / which coworker to DM (the small subset of questions that need a conversation), and has slots to record answers.
+- Highest-stakes questions: business keys, RabbitMQ library, deploy event source, historical incidents corpus, CLI distribution.
+- Sanity-check with Wilco eng leadership that installing a personal-project tool into their stack is fine before sinking effort into instrumentation (see `docs/week-0-investigation.md` "Wilco-the-org sanity check").
+- DB hosting **already decided** (§6 above — Neon + Fly).
+- Provision personal accounts: GitHub repo, Neon account + project, Fly.io account, Anthropic API key, OpenAI API key, npm scope (`@betterlog`).
+- **Exit:** All 10 spec open questions answered or explicitly deferred (recorded in `docs/week-0-investigation.md`). Personal infra provisioned. Wilco-the-org sanity-check passed.
 
 ### Week 1 — Foundation
 - Monorepo scaffolding (pnpm workspaces, Turborepo, TS, ESLint, Vitest).
@@ -252,12 +274,12 @@ Each week has a single concrete exit criterion. If a week slips, cut scope from 
 
 Negligible. Rough monthly:
 
-- App host (Fly.io or Railway): $0–15
-- Database (Neon free / Railway Postgres / Render free): $0–10
-- LLM (Anthropic Claude Sonnet, ~50 `/diagnose` calls/day × ~$0.02 each): $20–80
+- App host (Fly.io): $0–15
+- Database (Neon free tier): $0–10
+- LLM (whichever provider — ~50 `/diagnose` calls/day × ~$0.02 each at mid-tier models): $20–80
 - Embeddings (OpenAI `text-embedding-3-small`, a few hundred per week): <$5
 
-**Total: well under $200/month through the MVP.** Anthropic spend is the dominant cost.
+**Total: well under $200/month through the MVP.** LLM inference is the dominant cost regardless of provider.
 
 ---
 
@@ -281,13 +303,14 @@ These are absent on purpose, in line with `SPEC.md` §6:
 1. **RabbitMQ context propagation (week 3)** — most likely to slip. Mitigation: prototype this in week 1 with a throwaway script as soon as we know the AMQP library. See [`docs/rabbitmq-tracing.md`](./rabbitmq-tracing.md).
 2. **80% diagnosis accuracy (week 5)** — depends on quality of historical corpus. Mitigation: collect aggressively from week 4 dogfooding, supplement with synthetic incidents if real corpus is thin.
 3. **Wilco access** — getting SDK installed in Wilco services, deploy access, npm-package install. Mitigation: solve in week 0, not week 3.
-4. **Same person is BetterLog PM and Wilco eng team** — the same person prioritizing BetterLog and prioritizing Wilco's eng team. Mitigation: pick a weekly checkpoint (e.g., Friday) where Wilco-the-customer reviews progress, separate from Wilco-the-eng-team time.
+4. **Solo dev — BetterLog vs. paid Wilco work for the same hours.** BetterLog is built in personal capacity; Wilco is the day job and will always have an SLA on Tanishq's time that BetterLog won't. Mitigation: protect a fixed weekly block (e.g., evenings + one weekend slot) for BetterLog and treat it as non-negotiable; do a Friday self-review against the relevant week's exit criterion in §7 and cut scope from the *next* week before the current one slips.
 
 ---
 
 ## 11. Related docs
 
 - [`SPEC.md`](../SPEC.md) — the WHAT (product hypothesis, data model, example questions, success criteria).
+- [`docs/week-0-investigation.md`](./week-0-investigation.md) — Week 0 solo investigation playbook: per-question grep/read targets, the small set of questions that need a coworker DM, exit checklist.
 - [`docs/architecture.md`](./architecture.md) — component-by-component design (filled in during week 0–1).
 - [`docs/data-model.md`](./data-model.md) — DDL details, indexes, retention (filled in during week 1).
 - [`docs/sdk-design.md`](./sdk-design.md) — SDK API surface and ergonomics (filled in during week 1).
