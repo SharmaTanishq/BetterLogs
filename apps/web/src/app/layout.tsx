@@ -1,28 +1,38 @@
 import type { Metadata, Viewport } from "next";
-import { Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { Space_Grotesk, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
+import "@xyflow/react/dist/style.css";
 
-const instrumentSans = Instrument_Sans({
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
+  weight: ["500", "700"],
   display: "swap",
-  variable: "--font-instrument",
+  variable: "--font-space-grotesk",
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const inter = Inter({
   subsets: ["latin"],
+  weight: ["400", "500", "600"],
   display: "swap",
-  variable: "--font-jetbrains",
+  variable: "--font-inter",
+});
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  display: "swap",
+  variable: "--font-plex-mono",
 });
 
 export const metadata: Metadata = {
-  title: "BetterLog — What happened to order #2847?",
+  title: "BetterLog_ — AI-powered workflow diagnosis",
   description:
-    "Workflow observability + AI diagnosis for cross-system business processes. Get answers in seconds, not hours.",
+    "Root cause. Context. Action. BetterLog maps OpenTelemetry traces onto named business workflows so engineers and ops teams share one explanation of what failed and what to do next.",
   metadataBase: new URL("https://betterlog.dev"),
   openGraph: {
-    title: "BetterLog — Workflow observability with AI diagnosis",
+    title: "BetterLog — AI-powered workflow diagnosis",
     description:
-      "Drop in our SDK. We watch your workflows across every service. When something breaks, ask the AI agent what happened.",
+      "OTel-native workflow diagnosis. Translate distributed trace failures into plain-language root cause analyses both engineers and ops can read.",
     type: "website",
   },
 };
@@ -30,13 +40,18 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#f7f4ed",
+  themeColor: "#F2F2EE",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${instrumentSans.variable} ${jetbrainsMono.variable}`}>
-      <body className="min-h-dvh antialiased">{children}</body>
+    <html
+      lang="en"
+      className={`${spaceGrotesk.variable} ${inter.variable} ${plexMono.variable}`}
+    >
+      <body className="min-h-dvh bg-[var(--color-background)] text-[var(--color-foreground)] antialiased">
+        {children}
+      </body>
     </html>
   );
 }

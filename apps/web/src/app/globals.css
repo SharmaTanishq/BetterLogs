@@ -1,54 +1,58 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   BetterLog — Design tokens (Lovable-inspired)
-   See lovable/DESIGN.md for the source-of-truth design language.
+   BetterLog — brutalist_grid v1.1
+   Visual source of truth: lovable/DESIGN_TWO.md + brand-kit-v2.png
    ============================================================================ */
 @theme {
-  /* Surface */
-  --color-cream: #f7f4ed;
-  --color-cream-soft: #fcfbf8;
-  --color-cream-border: #eceae4;
+  /* Base palette */
+  --color-void: #0b0d10;
+  --color-slate: #1b1f26;
+  --color-concrete: #e5e7ea;
+  --color-paper: #f2f2ee;
+  --color-signal: #2563eb;
+  --color-trace: #00bb94;
+  --color-alert: #ff4d2e;
 
-  /* Ink (the brand uses opacity-driven gray derived from charcoal) */
-  --color-ink: #1c1c1c;
-  --color-ink-83: rgba(28, 28, 28, 0.83);
-  --color-ink-82: rgba(28, 28, 28, 0.82);
-  --color-ink-40: rgba(28, 28, 28, 0.4);
-  --color-ink-10: rgba(28, 28, 28, 0.1);
-  --color-ink-04: rgba(28, 28, 28, 0.04);
-  --color-ink-03: rgba(28, 28, 28, 0.03);
-  --color-muted: #5f5f5d;
+  /* Semantic roles */
+  --color-background: #f2f2ee;
+  --color-surface: #ffffff;
+  --color-surface-inset: #e5e7ea;
+  --color-foreground: #0b0d10;
+  --color-foreground-muted: #1b1f26;
+  --color-foreground-subtle: #6b6f76;
+  --color-hairline: rgba(27, 31, 38, 0.13);
 
-  /* Status accents — kept warm-muted on purpose */
-  --color-success: #4f7a4a;
-  --color-warning: #b06a2c;
-  --color-danger: #a4453a;
-
-  /* Type families — Camera Plain isn't OFL, so we substitute a humanist
-     variable font (Instrument Sans) that preserves the editorial warmth. */
-  --font-display: "Instrument Sans", ui-sans-serif, system-ui, -apple-system,
+  /* Type families. Loaded via next/font/google in layout.tsx. */
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui,
+    -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
     "Segoe UI", Roboto, sans-serif;
-  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, -apple-system,
-    "Segoe UI", Roboto, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas,
-    monospace;
+  --font-mono: var(--font-plex-mono), ui-monospace, SFMono-Regular, Menlo,
+    Consolas, monospace;
 
-  /* Radius (Lovable scale) */
-  --radius-card: 12px;
-  --radius-container: 16px;
+  /* Radius — 0 by default. 2-4px on interactive chrome only. */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-pill: 999px;
 
-  /* Containers / max widths */
-  --container-content: 1200px;
+  /* Motion — snap, do not glide. */
+  --motion-fast: 80ms;
+  --motion-base: 140ms;
+  --motion-slow: 220ms;
+  --ease-snap: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Container */
+  --container-content: 1280px;
 }
 
 /* ============================================================================
-   Base layer
+   Base
    ============================================================================ */
 html,
 body {
-  background: var(--color-cream);
-  color: var(--color-ink);
+  background: var(--color-background);
+  color: var(--color-foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -56,96 +60,119 @@ body {
 }
 
 ::selection {
-  background: rgba(28, 28, 28, 0.85);
-  color: var(--color-cream-soft);
+  background: var(--color-foreground);
+  color: var(--color-paper);
+}
+
+/* Mono affordances */
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Eyebrow / plate-style mono label */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--color-foreground);
 }
 
 /* ============================================================================
-   Signature: dark button inset shadow (from Lovable design)
+   Borders & "hover ring" elevation pattern
    ============================================================================ */
-.shadow-inset-dark {
-  box-shadow:
-    rgba(255, 255, 255, 0.2) 0px 0.5px 0px 0px inset,
-    rgba(0, 0, 0, 0.2) 0px 0px 0px 0.5px inset,
-    rgba(0, 0, 0, 0.05) 0px 1px 2px 0px;
+.border-hairline {
+  border-color: var(--color-hairline);
 }
 
-.shadow-focus-warm {
-  box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px;
+.ring-hover:hover {
+  box-shadow: 0 0 0 1px var(--color-foreground);
 }
 
-.shadow-soft-card {
-  box-shadow: rgba(28, 28, 28, 0.04) 0px 1px 2px,
-    rgba(28, 28, 28, 0.03) 0px 4px 12px;
+.dashed-border {
+  border-style: dashed;
+  border-width: 1px;
+  border-color: var(--color-foreground);
 }
 
 /* ============================================================================
-   Hero atmospheric wash — warm, multi-color, barely-there
+   Faint mechanical canvas texture (kept under 4% opacity per spec)
    ============================================================================ */
-.hero-wash {
-  background:
-    radial-gradient(60% 50% at 18% 24%, rgba(255, 196, 173, 0.55) 0%, rgba(255, 196, 173, 0) 70%),
-    radial-gradient(50% 45% at 82% 20%, rgba(178, 196, 235, 0.45) 0%, rgba(178, 196, 235, 0) 70%),
-    radial-gradient(70% 60% at 50% 100%, rgba(241, 222, 191, 0.5) 0%, rgba(241, 222, 191, 0) 70%);
-}
-
-/* Grain texture for paper-like feel */
-.paper-grain {
+.paper-texture {
   position: relative;
   isolation: isolate;
 }
-.paper-grain::after {
+.paper-texture::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.04 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  mix-blend-mode: multiply;
-  opacity: 0.5;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.035 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
   z-index: 0;
 }
-.paper-grain > * {
+.paper-texture > * {
   position: relative;
   z-index: 1;
 }
 
-/* Workflow connector — animated dashed line */
-.flow-dash {
-  background-image: linear-gradient(
-    90deg,
-    rgba(28, 28, 28, 0.25) 0 6px,
-    transparent 6px 12px
-  );
-  background-size: 12px 1px;
-  background-repeat: repeat-x;
-  background-position: 0 50%;
-  animation: flow-dash-move 1.6s linear infinite;
-}
-@keyframes flow-dash-move {
-  to { background-position: 12px 50%; }
-}
-
-/* Cursor blink for the demo terminal */
-@keyframes blink {
+/* ============================================================================
+   CLI caret blink — used on hovered CTAs and the agent message stream
+   ============================================================================ */
+@keyframes caret-blink {
   0%, 49% { opacity: 1; }
   50%, 100% { opacity: 0; }
 }
 .caret {
   display: inline-block;
-  width: 0.55ch;
+  width: 0.5ch;
   height: 1em;
   background: currentColor;
   margin-left: 2px;
   vertical-align: -2px;
-  animation: blink 1.05s steps(1) infinite;
+  animation: caret-blink 1.05s steps(1) infinite;
 }
 
-/* Respect user reduced-motion preference (a11y) */
+/* ============================================================================
+   React Flow restyling — void canvas, 1px white nodes, white edges
+   ============================================================================ */
+.react-flow.brutalist {
+  background: var(--color-void);
+}
+.react-flow.brutalist .react-flow__background {
+  background: var(--color-void);
+}
+.react-flow.brutalist .react-flow__edge-path {
+  stroke: rgba(229, 231, 234, 0.45);
+  stroke-width: 1;
+}
+.react-flow.brutalist .react-flow__edge.selected .react-flow__edge-path,
+.react-flow.brutalist .react-flow__edge:focus .react-flow__edge-path {
+  stroke: var(--color-concrete);
+}
+.react-flow.brutalist .react-flow__handle {
+  border: none;
+  background: transparent;
+  width: 6px;
+  height: 6px;
+  min-width: 6px;
+  min-height: 6px;
+}
+.react-flow.brutalist .react-flow__attribution {
+  display: none;
+}
+
+/* ============================================================================
+   Reduced motion — collapse to a static, instant page
+   ============================================================================ */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
-  .flow-dash { animation: none; }
 }

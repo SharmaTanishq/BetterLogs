@@ -9,21 +9,37 @@ type State = "idle" | "loading" | "success";
 
 interface WaitlistFormProps {
   id?: string;
-  variant?: "hero" | "compact";
+  /** "light" = paper canvas, "dark" = void canvas. */
+  surface?: "light" | "dark";
   className?: string;
 }
 
-export function WaitlistForm({ id = "waitlist", variant = "hero", className }: WaitlistFormProps) {
+/**
+ * Brutalist CLI-prompt waitlist form. UI-only — simulates submit latency, then
+ * morphs to a success state. No network call (per the brief: keep the waitlist
+ * surface but no business logic yet).
+ *
+ *   $ betterlog waitlist > [ you@yourcompany.com    ] [ Join Waitlist → ]
+ *   Press ↵ to join · your data goes to no third parties yet
+ */
+export function WaitlistForm({ id = "waitlist", surface = "light", className }: WaitlistFormProps) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<State>("idle");
 
-  // UI-only: simulate latency, then morph to success. No network call.
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || state !== "idle") return;
     setState("loading");
     window.setTimeout(() => setState("success"), 900);
   };
+
+  const isDark = surface === "dark";
+  const ink = isDark ? "text-[var(--color-paper)]" : "text-[var(--color-foreground)]";
+  const subtle = isDark
+    ? "text-[var(--color-concrete)]/70"
+    : "text-[var(--color-foreground-subtle)]";
+  const border = isDark ? "border-[var(--color-concrete)]" : "border-[var(--color-foreground)]";
+  const fieldBg = isDark ? "bg-[var(--color-void)]" : "bg-[var(--color-surface)]";
 
   return (
     <form
@@ -32,14 +48,39 @@ export function WaitlistForm({ id = "waitlist", variant = "hero", className }: W
       className={cn("w-full", className)}
       aria-label="Join the BetterLog waitlist"
     >
+      {/* CLI prompt eyebrow */}
       <div
         className={cn(
-          "group relative flex items-center overflow-hidden rounded-[10px] border bg-[var(--color-cream-soft)]",
-          "border-[var(--color-cream-border)] transition-all",
-          "focus-within:border-[var(--color-ink-40)] focus-within:shadow-focus-warm",
-          variant === "hero" ? "h-14 pl-5 pr-1.5" : "h-12 pl-4 pr-1",
+          "mb-2 flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em]",
+          subtle,
         )}
       >
+        <span>$</span>
+        <span>betterlog waitlist</span>
+      </div>
+
+      {/* Field row */}
+      <div
+        className={cn(
+          "group flex items-stretch border transition-shadow",
+          border,
+          fieldBg,
+          "focus-within:shadow-[0_0_0_1px_var(--color-foreground)]",
+          isDark && "focus-within:shadow-[0_0_0_1px_var(--color-concrete)]",
+        )}
+      >
+        {/* Mono prefix */}
+        <span
+          className={cn(
+            "flex select-none items-center border-r px-3 font-mono text-[14px]",
+            border,
+            ink,
+          )}
+          aria-hidden
+        >
+          &gt;
+        </span>
+
         <AnimatePresence mode="wait" initial={false}>
           {state !== "success" ? (
             <motion.input
@@ -54,62 +95,61 @@ export function WaitlistForm({ id = "waitlist", variant = "hero", className }: W
               disabled={state === "loading"}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0, x: -8 }}
-              transition={{ duration: 0.18 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12 }}
               className={cn(
-                "flex-1 bg-transparent text-[var(--color-ink)] placeholder:text-[var(--color-muted)] outline-none",
-                variant === "hero" ? "text-[16px]" : "text-[15px]",
+                "min-w-0 flex-1 bg-transparent px-3 font-mono text-[14px] outline-none",
+                ink,
+                isDark
+                  ? "placeholder:text-[var(--color-concrete)]/40"
+                  : "placeholder:text-[var(--color-foreground-subtle)]",
               )}
             />
           ) : (
             <motion.div
               key="success"
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.22 }}
-              className="flex flex-1 items-center gap-2.5 text-[var(--color-ink)]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.16 }}
+              className={cn(
+                "flex flex-1 items-center gap-2 px-3 font-mono text-[14px]",
+                ink,
+              )}
             >
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[var(--color-ink)] text-[var(--color-cream-soft)]">
-                <motion.span
-                  initial={{ pathLength: 0, opacity: 0 }}
-                  animate={{ pathLength: 1, opacity: 1 }}
-                  transition={{ duration: 0.35, ease: "easeOut" }}
-                  className="flex"
-                >
-                  <Check className="h-3.5 w-3.5" strokeWidth={2.6} />
-                </motion.span>
-              </span>
-              <span className={variant === "hero" ? "text-[16px]" : "text-[15px]"}>
-                You&rsquo;re on the list. We&rsquo;ll be in touch.
-              </span>
+              <span
+                aria-hidden
+                className="inline-block h-2 w-2 shrink-0 rounded-full"
+                style={{ background: "var(--color-trace)" }}
+              />
+              <span>request_received &middot; we&rsquo;ll be in touch.</span>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <motion.button
+        <button
           type="submit"
           disabled={state !== "idle"}
-          whileTap={state === "idle" ? { scale: 0.97 } : undefined}
           className={cn(
-            "shadow-inset-dark inline-flex items-center justify-center gap-1.5 rounded-[7px] bg-[var(--color-ink)] text-[var(--color-cream-soft)] transition-opacity",
-            "hover:opacity-90 disabled:cursor-not-allowed",
-            variant === "hero" ? "h-11 px-5 text-[15px]" : "h-9 px-4 text-[14px]",
+            "flex shrink-0 items-center gap-2 border-l px-4 font-sans text-[13px] font-medium transition-colors duration-[var(--motion-base)]",
+            border,
+            "bg-[var(--color-signal)] text-white hover:bg-[#1d4ed8] active:translate-y-px",
+            "disabled:cursor-not-allowed disabled:opacity-90",
           )}
           aria-label={
-            state === "success" ? "Submitted" : state === "loading" ? "Submitting" : "Request access"
+            state === "success" ? "Submitted" : state === "loading" ? "Submitting" : "Join waitlist"
           }
         >
           <AnimatePresence mode="wait" initial={false}>
             {state === "idle" && (
               <motion.span
                 key="cta"
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.15 }}
-                className="inline-flex items-center gap-1.5"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.1 }}
+                className="inline-flex items-center gap-2"
               >
-                Request access
+                Join Waitlist
                 <ArrowRight className="h-4 w-4" strokeWidth={2} />
               </motion.span>
             )}
@@ -127,21 +167,32 @@ export function WaitlistForm({ id = "waitlist", variant = "hero", className }: W
             {state === "success" && (
               <motion.span
                 key="done"
-                initial={{ opacity: 0, scale: 0.85 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.2 }}
-                className="inline-flex items-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="inline-flex items-center gap-2"
               >
                 <Check className="h-4 w-4" strokeWidth={2.4} />
+                Joined
               </motion.span>
             )}
           </AnimatePresence>
-        </motion.button>
+        </button>
       </div>
 
-      <p className="mt-3 text-[13px] text-[var(--color-muted)]">
-        Free during private beta. No credit card. Unsubscribe anytime.
-      </p>
+      {/* Helper line — CLI style */}
+      <div
+        className={cn(
+          "mt-2 flex items-center gap-3 font-mono text-[11px]",
+          subtle,
+        )}
+      >
+        <span>
+          Press <kbd className={cn("border px-1 py-px text-[10px]", border)}>↵</kbd> to join
+        </span>
+        <span aria-hidden>·</span>
+        <span>private beta · BYOK · no third-party tracking</span>
+      </div>
     </form>
   );
 }

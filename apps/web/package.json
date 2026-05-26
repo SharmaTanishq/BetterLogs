@@ -4,9 +4,9 @@
   "private": true,
   "description": "BetterLog marketing site + waiting list.",
   "scripts": {
-    "dev": "next dev --port 3000",
+    "dev": "next dev --port ${PORT:-3030}",
     "build": "next build",
-    "start": "next start --port 3000",
+    "start": "next start --port ${PORT:-3030}",
     "typecheck": "tsc --noEmit",
     "lint": "next lint",
     "clean": "rm -rf .next .turbo *.tsbuildinfo"
@@ -18,7 +18,8 @@
     "motion": "^12.23.0",
     "lucide-react": "^0.473.0",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^2.5.5"
+    "tailwind-merge": "^2.5.5",
+    "@xyflow/react": "^12.10.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",

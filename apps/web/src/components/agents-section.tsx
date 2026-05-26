@@ -2,130 +2,182 @@
 
 import { motion, useInView } from "motion/react";
 import { useRef } from "react";
-import { Bot, GitBranch, ShieldCheck, Workflow } from "lucide-react";
+import { Boxes, Lock, ScanLine, ShieldCheck, TerminalSquare, Workflow } from "lucide-react";
+import { PlateHeader } from "./plate";
 
-const BENEFITS = [
+const EASE_SNAP = [0.2, 0, 0, 1] as const;
+
+const ENGINEER_BENEFITS = [
   {
-    icon: Bot,
-    title: "Agent workflows are first-class",
-    body: "Every tool call, retry, and handoff is captured as a step. When an agent loops or stalls, you see exactly where.",
-  },
-  {
-    icon: GitBranch,
-    title: "Built for non-deterministic flows",
-    body: "Agents take different paths each run. BetterLog correlates by intent, not by hard-coded structure.",
+    icon: TerminalSquare,
+    title: "CLI-native RCA",
+    body: "Run `betterlog diagnose <business_key>` from your terminal. Get failed step, root cause, similar past failures, and a suggested fix in seconds.",
   },
   {
     icon: Workflow,
-    title: "Cross-system by default",
-    body: "An agent that calls Slack → Linear → your DB → an LLM is one workflow. Not four dashboards.",
+    title: "OTel-native, additive",
+    body: "Emits standard OTel spans through your existing collector. Jaeger, Tempo, Datadog — keep them. We add a semantic layer on top.",
   },
   {
-    icon: ShieldCheck,
-    title: "Diagnose without leaking",
-    body: "PII and secrets stay redacted. The agent reads structure, attributes, and outcomes — not raw payloads.",
+    icon: Boxes,
+    title: "Explicit workflow contract",
+    body: "Step sequence is declared at instrumentation time with @workflow + recordStep(). No probabilistic inference from timestamps and parentage.",
   },
 ];
 
-export function AgentsSection() {
+const OPS_BENEFITS = [
+  {
+    icon: ScanLine,
+    title: "Plain-language failures",
+    body: "Business keys (order_id, invoice_id) and named steps — not span IDs or latency percentiles. Ops can read it without learning distributed tracing.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Recurring pattern memory",
+    body: "Similar past failures surfaced with every diagnosis via pgvector similarity. Stop re-investigating the same SKU mapping error.",
+  },
+  {
+    icon: Lock,
+    title: "BYOK, self-hostable",
+    body: "Bring your own LLM key (OpenAI, Anthropic, Ollama). Self-host the stack in your own cloud. Zero data egress for regulated industries.",
+  },
+];
+
+export function BuiltForBoth() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-10% 0px" });
 
   return (
-    <section id="workflows" className="relative">
-      <div className="mx-auto max-w-[1200px] px-5 py-24 sm:px-8 sm:py-32">
-        <div className="mx-auto max-w-[760px] text-center">
-          <motion.span
-            initial={{ opacity: 0, y: 8 }}
-            animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.4 }}
-            className="text-[12px] font-medium uppercase tracking-[0.1em] text-[var(--color-muted)]"
+    <section
+      id="built-for"
+      className="relative border-b border-[var(--color-foreground)] bg-[var(--color-background)]"
+    >
+      <div className="mx-auto max-w-[1280px] px-5 py-20 sm:px-8 sm:py-28">
+        <PlateHeader n="005" label="BUILT_FOR_BOTH" meta="ENGINEER + OPS" />
+
+        <div className="mt-6 grid items-end gap-6 sm:grid-cols-[1.2fr_0.8fr]">
+          <h2
+            className="font-display font-bold leading-[1] tracking-[-0.025em] text-[var(--color-foreground)]"
+            style={{ fontSize: "clamp(34px, 5vw, 64px)" }}
           >
-            Made for AI-driven workflows
-          </motion.span>
-          <motion.h2
-            initial={{ opacity: 0, y: 14 }}
-            animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.55, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-3 font-semibold text-[var(--color-ink)]"
-            style={{
-              fontSize: "clamp(30px, 4.4vw, 46px)",
-              lineHeight: 1.06,
-              letterSpacing: "-0.024em",
-            }}
-          >
-            Your agents make decisions. We make them legible.
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={inView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.12 }}
-            className="mt-5 text-[17px] leading-[1.55] text-[var(--color-muted)]"
-          >
-            AI agents take new paths each time they run &mdash; that&rsquo;s the point. But it
-            makes them brutal to debug. BetterLog turns every agent run into a workflow you can
-            inspect, query, and explain.
-          </motion.p>
+            One diagnosis.
+            <br />
+            Two readers.
+          </h2>
+          <p className="text-[15px] leading-[1.55] text-[var(--color-foreground-subtle)]">
+            The engineer who built the system needs trace fidelity. The ops person on call
+            needs a plain answer. BetterLog ships both, off the same data.
+          </p>
         </div>
 
-        <div ref={ref} className="mt-14 grid gap-4 sm:grid-cols-2 lg:mt-16">
-          {BENEFITS.map((b, i) => (
-            <motion.article
-              key={b.title}
-              initial={{ opacity: 0, y: 14 }}
-              animate={inView ? { opacity: 1, y: 0 } : {}}
-              transition={{
-                duration: 0.45,
-                delay: 0.08 + i * 0.08,
-                ease: [0.22, 1, 0.36, 1],
-              }}
-              whileHover={{ y: -2 }}
-              className="rounded-[16px] border border-[var(--color-cream-border)] bg-[var(--color-cream-soft)] p-6 transition-shadow hover:shadow-soft-card sm:p-7"
-            >
-              <span
-                className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] bg-[var(--color-ink)] text-[var(--color-cream-soft)]"
-                aria-hidden
-              >
-                <b.icon className="h-[18px] w-[18px]" strokeWidth={1.6} />
-              </span>
-              <h3
-                className="mt-4 text-[19px] font-semibold leading-[1.2] text-[var(--color-ink)]"
-                style={{ letterSpacing: "-0.014em" }}
-              >
-                {b.title}
-              </h3>
-              <p className="mt-2 text-[14.5px] leading-[1.55] text-[var(--color-muted)]">
-                {b.body}
-              </p>
-            </motion.article>
-          ))}
+        <div ref={ref} className="mt-14 grid gap-px bg-[var(--color-foreground)] lg:grid-cols-2">
+          <PersonaBlock
+            label="FOR_ENGINEERS"
+            persona="The platform / infra engineer"
+            tagline="CLI, OTel, no re-instrumentation."
+            benefits={ENGINEER_BENEFITS}
+            inView={inView}
+            accent="signal"
+          />
+          <PersonaBlock
+            label="FOR_OPS"
+            persona="The on-call ops teammate"
+            tagline="Read it, fix it, move on."
+            benefits={OPS_BENEFITS}
+            inView={inView}
+            accent="trace"
+          />
         </div>
 
-        {/* Use cases ticker */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={inView ? { opacity: 1 } : {}}
-          transition={{ duration: 0.6, delay: 0.6 }}
-          className="mt-12 flex flex-wrap items-center justify-center gap-2 sm:mt-14"
-        >
-          <span className="text-[13px] text-[var(--color-muted)]">Built for:</span>
+        {/* Wedge segment band */}
+        <div className="mt-10 flex flex-wrap items-center gap-2 border-t border-[var(--color-foreground)] pt-5">
+          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--color-foreground-subtle)]">
+            ENTRY_SEGMENT
+          </span>
           {[
-            "Order fulfillment",
-            "Invoice processing",
-            "Agentic RAG pipelines",
-            "Multi-tool LLM agents",
-            "Background job graphs",
-            "Webhook fan-outs",
-          ].map((tag) => (
+            "E-commerce fulfillment",
+            "Logistics workflows",
+            "B2B SaaS order pipelines",
+            "Multi-service order, invoice, shipment graphs",
+          ].map((t) => (
             <span
-              key={tag}
-              className="rounded-full border border-[var(--color-cream-border)] bg-[var(--color-cream-soft)] px-3 py-1 text-[12.5px] text-[var(--color-ink-83)]"
+              key={t}
+              className="border border-[var(--color-foreground)] bg-[var(--color-surface)] px-2 py-1 font-mono text-[11.5px] text-[var(--color-foreground)]"
             >
-              {tag}
+              {t}
             </span>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
+  );
+}
+
+function PersonaBlock({
+  label,
+  persona,
+  tagline,
+  benefits,
+  inView,
+  accent,
+}: {
+  label: string;
+  persona: string;
+  tagline: string;
+  benefits: Array<{ icon: React.ComponentType<{ className?: string; strokeWidth?: number }>; title: string; body: string }>;
+  inView: boolean;
+  accent: "signal" | "trace";
+}) {
+  const dot = accent === "signal" ? "var(--color-signal)" : "var(--color-trace)";
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.22, ease: EASE_SNAP }}
+      className="border border-[var(--color-foreground)] bg-[var(--color-surface)]"
+    >
+      <div className="flex items-center justify-between border-b border-[var(--color-foreground)] px-5 py-2.5 sm:px-6">
+        <span className="inline-flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--color-foreground)]">
+          <span
+            aria-hidden
+            className="inline-block h-2 w-2 rounded-full"
+            style={{ background: dot }}
+          />
+          {label}
+        </span>
+        <span className="font-mono text-[10.5px] text-[var(--color-foreground-subtle)]">
+          {tagline}
+        </span>
+      </div>
+      <div className="p-5 sm:p-6">
+        <h3 className="font-display text-[22px] font-bold leading-[1.1] tracking-[-0.02em] text-[var(--color-foreground)]">
+          {persona}
+        </h3>
+
+        <div className="mt-6 grid gap-px bg-[var(--color-foreground)]">
+          {benefits.map((b) => (
+            <article
+              key={b.title}
+              className="flex gap-3 border border-[var(--color-foreground)] bg-[var(--color-surface)] p-4 transition-shadow duration-[var(--motion-base)] hover:shadow-[0_0_0_1px_var(--color-foreground)]"
+            >
+              <span
+                aria-hidden
+                className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center border border-[var(--color-foreground)] bg-[var(--color-background)] text-[var(--color-foreground)]"
+              >
+                <b.icon className="h-4 w-4" strokeWidth={1.6} />
+              </span>
+              <div className="min-w-0">
+                <h4 className="text-[15px] font-semibold leading-[1.2] text-[var(--color-foreground)]">
+                  {b.title}
+                </h4>
+                <p className="mt-1 text-[13.5px] leading-[1.55] text-[var(--color-foreground-muted)]">
+                  {b.body}
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </motion.div>
   );
 }
