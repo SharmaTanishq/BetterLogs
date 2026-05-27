@@ -62,22 +62,30 @@ The following gaps are supported by the source evidence above:
 ## Recommended Positioning
 
 **Primary claim:**
-> BetterLog is the only workflow diagnosis tool built for both engineers and ops teams — it maps distributed trace failures onto named business workflows and delivers plain-language root cause analysis, so ops teams never have to wait for an engineer to explain what happened to order-1234.
+> BetterLog is a case-level workflow diagnosis layer for cross-service business processes. Engineers declare workflow shape via an SDK contract; both engineers and ops teams get plain-language root cause analyses for any specific order, invoice, or agent run — without reading raw traces. Built on OpenTelemetry, runs on top of any existing observability backend.
 
 **Positioning pillars:**
 
-1. **Explicit workflow contract, not inference.** BetterLog's `@workflow` + `recordStep()` SDK declares step sequence at instrumentation time. Unlike Datadog/Honeycomb, which infer workflow shape from span timestamps and parentage, BetterLog's graph is deterministic and trustworthy for non-engineers.
+1. **Explicit workflow contract, not inference.** BetterLog's `@workflow` + `recordStep()` SDK declares step sequence at instrumentation time. Unlike Datadog/Honeycomb, which infer workflow shape from span timestamps and parentage, BetterLog's graph is deterministic and trustworthy for non-engineers. This is the durable moat — not the LLM, which is now table stakes across the observability category.
 
 2. **OTel-native, zero lock-in.** The SDK emits standard OTel spans. It plugs into existing collectors (Jaeger, Tempo, Datadog) without replacing them. Engineers can adopt BetterLog without dismantling their current stack.
 
-3. **Two-persona clarity.** Engineers get fast CLI-based RCA (`betterlog diagnose order-1234`). Ops teams get a visual workflow graph with plain-language failure summaries — no span IDs, no flame graph literacy required.
+3. **Explicit buyer/user split.** Engineers buy because BetterLog reduces interruptions (no more "what happened to order #1234?" Slack messages costing 30+ minutes per incident). Ops use it because it gives them an answer they can act on — a named, case-level timeline, not span IDs and flame graphs. Same product, two reasons to want it, one underlying mechanism.
 
-4. **Pattern memory.** Similar past failures are surfaced with each diagnosis (pgvector similarity search keyed to business identifiers). Teams stop re-investigating the same SKU mapping error.
+4. **Pattern memory.** Similar past failures are surfaced with each diagnosis (pgvector similarity search keyed to business identifiers). Teams stop re-investigating the same SKU mapping error, the same carrier rejection, the same timeout on the same tool call.
 
-5. **Data residency by design.** BYOK LLM (OpenAI, Anthropic, Ollama), self-hostable stack, minimal egress. Eliminates the data-residency objection that blocks regulated-industry adoption of cloud observability platforms.
+5. **Data residency by design.** BYOK LLM (OpenAI, Anthropic, Ollama), self-hostable stack, minimal egress. Eliminates the data-residency objection that blocks regulated-industry adoption of cloud observability platforms. Also keeps AI cost off BetterLog's margin and the customer's bill.
+
+## Anti-Positioning (what BetterLog is not)
+
+Three categories that BetterLog must explicitly not be confused with — each carries different buyer expectations and competitive dynamics that would dilute the workflow-contract pitch:
+
+- **Not "another observability platform."** Datadog, Honeycomb, New Relic, Grafana, and Dynatrace own the observability category. They serve engineers reading raw telemetry. BetterLog is a diagnosis layer that runs *on top of* any OTel-compatible backend — additive, not a replacement. Marketing as "observability" puts BetterLog on the wrong shelf and triggers price-and-feature comparisons it cannot win.
+- **Not "AI SRE" or "AI for observability."** This category is becoming crowded (Cleric, Resolve.ai, Robusta, plus AI bolt-ons from every incumbent: Datadog Bits, Honeycomb Canvas, New Relic SRE Agent). The differentiation in those tools is the LLM; the differentiation in BetterLog is the workflow contract. Lead with the contract.
+- **Not an incident management tool.** incident.io, PagerDuty, FireHydrant own incident response — alerting, paging, post-incident review. BetterLog answers a different question (*what happened in this specific case?*) on a different surface (CLI + workflow graph). Where it overlaps, BetterLog complements rather than competes — it gives the on-call person something to read when the page fires.
 
 **Against the key objection — "We already have Datadog":**
-Datadog serves the engineer reading traces. BetterLog serves the ops person getting the Slack message when order-1234 fails. The two tools are not substitutes; BetterLog is a diagnosis layer that sits on top of whatever OTel-compatible backend the team already uses.
+Datadog serves the engineer reading traces. BetterLog serves the ops person getting the Slack message when order-1234 fails — and the engineer who would otherwise be paged to translate. The two tools are not substitutes; BetterLog is a diagnosis layer that sits on top of whatever OTel-compatible backend the team already uses.
 
 ---
 
@@ -89,13 +97,19 @@ Datadog serves the engineer reading traces. BetterLog serves the ops person gett
 - Adoption trigger: The first `betterlog diagnose` run that surfaces a root cause in seconds, not minutes.
 - Risk: Team already pays for Datadog — framing must position BetterLog as additive, not a replacement. BYOK removes AI cost as an objection.
 
-**Daily user: Ops team member (e-commerce / logistics / B2B SaaS)**
+**Daily user: Ops team member (e-commerce / logistics / fintech / B2B SaaS)**
 - Pain: Waits on engineering to interpret failures. Has no visibility into whether a failure is new or recurring. Cannot triage until a developer responds.
 - Implication: With the web app, ops gets a named, visual workflow graph with inline root cause and fix. They can distinguish new failures from known patterns before paging anyone.
 - Adoption trigger: First time ops resolves or correctly triages a failure without paging engineering.
 
-**Entry segment: E-commerce and logistics SaaS**
-- Order fulfillment failures are frequent, revenue-impactful, and pattern-repeating (SKU mapping, carrier rejection, inventory mismatch). These are the clearest demo scenarios and the most credible design partner profile.
+**Secondary entry segment: solo developer / small AI-builder team**
+- Pain: Debugging an LLM agent today means scrolling 20+ tool calls in a log file, guessing which tool's output triggered the bad final answer, then re-running with `print` statements.
+- Implication: A single developer can wrap their agent with `@workflow` + `recordStep()` and run `betterlog diagnose run-abc123` to get a named, ordered timeline of the agent's tool calls — no org-wide adoption required, no permission needed.
+- Adoption trigger: First successful `betterlog diagnose` of an agent run that previously took 30+ minutes to debug.
+- Why it matters: This is the wedge that satisfies the bottom-up adoption-shape constraint. One developer, one service, one process, one win — without coordinating across teams.
+
+**Primary entry segment: mid-size SaaS teams running case-keyed workflows where one engineering org owns the full pipeline.**
+Concrete examples: e-commerce order fulfillment (the validated pilot wedge), invoice / billing sync, ETL and scheduled-job pipelines, webhook handler chains, agent tool-call traces. Failures are frequent, business-impactful, and pattern-repeating.
 
 ---
 
@@ -117,6 +131,10 @@ Datadog serves the engineer reading traces. BetterLog serves the ops person gett
 - Use when: Prospect raises data residency, AI cost, or vendor-lock concerns.
 - Evidence hook: "BYOK — OpenAI, Anthropic, or Ollama on your own infra. No customer data leaves your environment. No AI margin baked into your bill."
 
-**5. "Design partner offer — solve your worst fulfillment failure first."**
-- Use when: Early-stage design partner conversations with e-commerce/logistics SaaS.
-- Evidence hook: "Show us your hardest recurring fulfillment failure. We instrument it together and get you a root cause in one session. No commitment required."
+**5. "Design partner offer — solve your worst recurring failure first."**
+- Use when: Early-stage design partner conversations with mid-size SaaS prospects.
+- Evidence hook: "Show us your hardest recurring case-level failure — order, invoice, sync run, agent run, whatever. We instrument it together and get you a root cause in one session. No commitment required."
+
+**6. "Stop debugging your agent with print statements."**
+- Use when: Solo developers, AI-builder teams, LangChain / LangGraph / OpenAI Agents SDK users in HN, r/devops, r/MachineLearning, AI Twitter, builder Discords.
+- Evidence hook: "Wrap your agent's main with `@workflow`, wrap each tool call with `recordStep`, run `betterlog diagnose run-abc123`. Get a named timeline of the agent's reasoning, every tool input and output, and where the run went sideways. No re-runs with print statements, no scrolling 20+ LLM calls in a log file. One developer install, value the same day."

@@ -1,0 +1,25 @@
+{
+  "name": "@betterlog/example-raw-otel",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Mirror of examples/wilco-order-demo that produces the same workflows/steps rows using only @opentelemetry/* packages — proof that the BetterLog wire format is open and the SDK is optional.",
+  "scripts": {
+    "start": "tsx --env-file=../../.env src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.218.0",
+    "@opentelemetry/resources": "^2.7.0",
+    "@opentelemetry/sdk-trace-base": "^2.7.0",
+    "@opentelemetry/sdk-trace-node": "^2.7.0",
+    "@opentelemetry/semantic-conventions": "^1.41.0",
+    "ulid": "^3.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.22.0",
+    "typescript": "^6.0.0"
+  }
+}

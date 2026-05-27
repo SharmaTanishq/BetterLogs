@@ -1,0 +1,24 @@
+{
+  "name": "@betterlog/example-agent-vercel-ai",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Single-developer demo: multi-tool research agent built with Vercel AI SDK, instrumented with @betterlog/sdk-node so every tool call shows up as a step in BetterLog.",
+  "scripts": {
+    "start": "tsx --env-file=../../.env src/index.ts",
+    "start:success": "MODE=success tsx --env-file=../../.env src/index.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^3.0.65",
+    "@betterlog/sdk-node": "workspace:*",
+    "ai": "^6.0.191",
+    "ulid": "^3.0.2",
+    "zod": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.22.0",
+    "typescript": "^6.0.0"
+  }
+}

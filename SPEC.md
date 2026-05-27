@@ -17,7 +17,7 @@
 The hypothesis is **falsified** if any of the following hold after 6 weeks of MVP work with Wilco:
 
 - AI diagnosis is correct on fewer than 80% of replayed historical incidents.
-- Median time-to-answer exceeds 60 seconds.
+- Median time-to-answer exceeds 60 seconds.§1
 - Wilco's eng team uses the CLI fewer than 3 times per week unprompted.
 - Adding a second workflow (e.g., refunds, inventory sync) requires changes to the core data model.
 
@@ -187,16 +187,18 @@ CREATE INDEX idx_failure_embeddings_hnsw ON failure_embeddings USING hnsw (embed
 
 We do **not** invent a new instrumentation standard. Workflow/step/event records are derived from OTel spans with conventional attributes:
 
-| Span attribute            | Maps to                              |
-|---------------------------|---------------------------------------|
-| `betterlog.workflow.id`   | `Workflow.id`                         |
-| `betterlog.workflow.name` | `Workflow.name`                       |
-| `betterlog.business.*`    | `Workflow.business_keys`              |
-| `betterlog.step.name`     | `Step.name`                           |
-| `betterlog.step.status`   | `Step.status`                         |
-| `betterlog.event.type`    | `Event.type`                          |
-| `betterlog.outcome.status`| `Outcome.status`                      |
-| `betterlog.outcome.reason`| `Outcome.reason_code`                 |
+
+| Span attribute             | Maps to                  |
+| -------------------------- | ------------------------ |
+| `betterlog.workflow.id`    | `Workflow.id`            |
+| `betterlog.workflow.name`  | `Workflow.name`          |
+| `betterlog.business.`*     | `Workflow.business_keys` |
+| `betterlog.step.name`      | `Step.name`              |
+| `betterlog.step.status`    | `Step.status`            |
+| `betterlog.event.type`     | `Event.type`             |
+| `betterlog.outcome.status` | `Outcome.status`         |
+| `betterlog.outcome.reason` | `Outcome.reason_code`    |
+
 
 Customers already using OTel can adopt by adding attributes; customers without OTel use the thin SDK which emits these attributes for them.
 
@@ -213,6 +215,7 @@ These are the 10 questions the MVP must be able to answer well. They form the v0
 The single most important question. The MVP must answer this well or nothing else matters.
 
 **Good answer:**
+
 > Order `#1234` (workflow `order.fulfillment` started 2:14 PM) **failed at step `back40.push` at 2:17 PM**.
 > Root cause: `omniapi-integrator` rejected the payload with `SKU_MAPPING_MISSING` for product `P-9821`. [ASSUMPTION: this is a real Wilco error code]
 > Evidence: [trace link], step input/output snapshot.
@@ -224,6 +227,7 @@ The single most important question. The MVP must answer this well or nothing els
 A pattern question, not an individual lookup.
 
 **Good answer:**
+
 > 47 `order.fulfillment` workflows failed at step `integrator.transform` today (vs. baseline of 2/day).
 > 38 of 47 share the same `reason_code: SKU_MAPPING_MISSING`.
 > Affected SKUs: `P-9821` (31), `P-7432` (4), `P-0019` (3).
@@ -235,6 +239,7 @@ A pattern question, not an individual lookup.
 A status query, not a diagnosis.
 
 **Good answer:**
+
 > 12 `order.fulfillment` workflows are stuck (started > 5 min ago, last step is `queue.published` to `omniapi-tasks`, no `back40.push` yet). [ASSUMPTION: "stuck" threshold is configurable, 5 min is placeholder]
 > List: [`#1201`, `#1207`, `#1209`, ...]
 > Common pattern: all 12 are missing the consumer acknowledgement event from `omniapi-tasks`.
@@ -246,7 +251,9 @@ A status query, not a diagnosis.
 Asked as a follow-up after seeing a specific failure.
 
 **Good answer:**
+
 > Yes. `SKU_MAPPING_MISSING` failures for product `P-9821` occurred on:
+>
 > - 2026-05-09 (4 failures, resolved by manual SKU sync)
 > - 2026-04-22 (1 failure, resolved by adding mapping)
 > - 2026-04-03 (8 failures, resolved by reseeding catalog)
@@ -257,6 +264,7 @@ Asked as a follow-up after seeing a specific failure.
 A high-level health check, suitable for a `betterlog health` CLI invocation.
 
 **Good answer:**
+
 > Order fulfillment pipeline: **DEGRADED**.
 > Last 1 hour: 142 workflows started, 89 succeeded, 47 failed, 6 still running.
 > Failure rate: 33% (baseline: 1.4%).
@@ -268,6 +276,7 @@ A high-level health check, suitable for a `betterlog health` CLI invocation.
 Cross-system correlation, beyond just internal services.
 
 **Good answer:**
+
 > Order `#1234` belongs to customer `c-99`. [ASSUMPTION: Wilco has a CRM integration accessible to BetterLog]
 > Most recent support ticket: `T-5512` (opened 2:31 PM, 14 min after order failure).
 > Ticket subject: "My order didn't go through" — likely related.
@@ -278,7 +287,9 @@ Cross-system correlation, beyond just internal services.
 A causal question, requires correlation with external events.
 
 **Good answer:**
+
 > Strong correlation. [ASSUMPTION: deploy events are ingested]
+>
 > - Before 1:42 PM: `order.fulfillment` failure rate was 1.2% (3 of 240 in prior hour).
 > - After 1:42 PM: failure rate jumped to 33%.
 > - The deploy affected `omniapi-integrator` (the service where the failures occur).
@@ -290,6 +301,7 @@ A causal question, requires correlation with external events.
 A latency question. Useful for SLA monitoring.
 
 **Good answer:**
+
 > Over the last 24 hours: median 4.2s, p95 11.8s, p99 47.3s.
 > Compared to the previous 7 days: median 3.9s (+8%), p99 12.1s (+290% — likely caused by today's failures triggering retries).
 > Slowest step on average: `back40.push` (median 2.1s).
@@ -299,7 +311,9 @@ A latency question. Useful for SLA monitoring.
 A trend question. Useful for weekly ops reviews.
 
 **Good answer:**
+
 > Top 5 failing steps (last 7 days):
+>
 > 1. `integrator.transform` — 89 failures (mostly today)
 > 2. `back40.push` — 14 failures (intermittent, network timeouts) [ASSUMPTION]
 > 3. `medusa.create_order` — 3 failures (payment rejections)
@@ -311,6 +325,7 @@ A trend question. Useful for weekly ops reviews.
 The remediation-capture loop. Critical for building the data moat described in the long-term vision.
 
 **Good answer (as a CLI interaction):**
+
 ```
 $ betterlog diagnose order-1234
 [diagnosis from Q1]
@@ -324,6 +339,7 @@ Recorded resolution against order-1234 (reason_code: SKU_MAPPING_MISSING).
 > y
 Marking 30 workflows as resolved with the same action... done.
 ```
+
 (MVP captures the resolution metadata; "replaying" the 30 workflows is the v2 remediation primitive deferred in Section 6.)
 
 ---
@@ -343,23 +359,28 @@ flowchart LR
     API -.->|"optional outgoing webhook<br/>on failure"| Webhook["Slack / Discord / etc.<br/>(URL only, not an app)"]
 ```
 
+
+
 ### Component summary
 
-| Component | Purpose | MVP scope |
-|---|---|---|
-| **SDK (Node + Python)** | Thin wrappers that emit OTel spans with `betterlog.*` attributes. Two languages because Wilco's stack is Node-heavy with some Python possible. | `withWorkflow(name, businessKeys, fn)` and `recordStep(name, status, data?)`. That's it. |
-| **OTel Collector** | Standard OTel collector configured to forward spans with `betterlog.workflow.*` attributes to the ingestion endpoint. | Standard Docker deployment, single instance. |
-| **Storage** | Postgres for relational data, pgvector extension for failure-signature similarity. Single instance, no HA. | Schema from Section 3. ClickHouse considered but deferred — Postgres is sufficient at MVP scale. |
-| **Diagnosis API** | Single HTTP endpoint that takes a natural-language question, calls one LLM agent with a fixed set of query tools, returns a structured diagnosis. Also exposes `/resolve` and `/stats` endpoints consumed by the CLI. | `POST /diagnose`, `POST /resolve`, `GET /stats`. |
-| **LLM (BYOK)** | Customer brings their own OpenAI / Anthropic / Ollama key. No managed inference at MVP. | Local Ollama fallback documented for trial. |
-| **CLI** | The only user-facing surface. A thin HTTP client over the Diagnosis API, distributed as `@betterlog/cli` (npm). Engineers run it from their laptop or any shell. | Commands: `diagnose`, `health`, `stuck`, `similar`, `stats`, `watch`, `resolve`, `config`. API key from `BETTERLOG_API_KEY` env var or `~/.betterlog/config.json`. |
-| **Outgoing webhook (optional)** | Single configurable URL that receives a POST when a workflow fails. Lets customers route alerts into Slack / Discord / PagerDuty / email-relay without us building a Slack app. | One URL per workspace, hardcoded for MVP. |
+
+| Component                       | Purpose                                                                                                                                                                                                               | MVP scope                                                                                                                                                          |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **SDK (Node + Python)**         | Thin wrappers that emit OTel spans with `betterlog.`* attributes. Two languages because Wilco's stack is Node-heavy with some Python possible.                                                                        | `withWorkflow(name, businessKeys, fn)` and `recordStep(name, status, data?)`. That's it.                                                                           |
+| **OTel Collector**              | Standard OTel collector configured to forward spans with `betterlog.workflow.`* attributes to the ingestion endpoint.                                                                                                 | Standard Docker deployment, single instance.                                                                                                                       |
+| **Storage**                     | Postgres for relational data, pgvector extension for failure-signature similarity. Single instance, no HA.                                                                                                            | Schema from Section 3. ClickHouse considered but deferred — Postgres is sufficient at MVP scale.                                                                   |
+| **Diagnosis API**               | Single HTTP endpoint that takes a natural-language question, calls one LLM agent with a fixed set of query tools, returns a structured diagnosis. Also exposes `/resolve` and `/stats` endpoints consumed by the CLI. | `POST /diagnose`, `POST /resolve`, `GET /stats`.                                                                                                                   |
+| **LLM (BYOK)**                  | Customer brings their own OpenAI / Anthropic / Ollama key. No managed inference at MVP.                                                                                                                               | Local Ollama fallback documented for trial.                                                                                                                        |
+| **CLI**                         | The only user-facing surface. A thin HTTP client over the Diagnosis API, distributed as `@betterlog/cli` (npm). Engineers run it from their laptop or any shell.                                                      | Commands: `diagnose`, `health`, `stuck`, `similar`, `stats`, `watch`, `resolve`, `config`. API key from `BETTERLOG_API_KEY` env var or `~/.betterlog/config.json`. |
+| **Outgoing webhook (optional)** | Single configurable URL that receives a POST when a workflow fails. Lets customers route alerts into Slack / Discord / PagerDuty / email-relay without us building a Slack app.                                       | One URL per workspace, hardcoded for MVP.                                                                                                                          |
+
 
 ### Single-agent diagnosis loop
 
 One agent, many tools. No multi-agent orchestration.
 
 Tools provided to the agent (MVP set):
+
 - `get_workflow(workflow_id)` — full workflow + all steps + all events.
 - `find_workflow_by_business_key(key_name, key_value)` — e.g., `order_id` → workflow.
 - `search_recent_failures(workflow_name, time_window)` — recent failed workflows of a type.
@@ -414,11 +435,11 @@ If a feature isn't required to answer the 10 questions in Section 4, it's not in
 
 The MVP is **successful** if all of the following are true after 6 weeks:
 
-- [ ] Wilco's eng team invokes the CLI at least **5 times per week** unprompted, across **≥2 distinct engineers**.
-- [ ] AI diagnosis is correct on **≥80%** of the 20+ replayed historical incidents in the eval harness.
-- [ ] Median time-to-answer for a `betterlog diagnose` invocation is **<30 seconds**.
-- [ ] A **second workflow** (refund or inventory) is instrumented without changing the core data model.
-- [ ] At least **one real production incident** at Wilco was resolved faster because of BetterLog, with a named owner who will say so on record.
+- Wilco's eng team invokes the CLI at least **5 times per week** unprompted, across **≥2 distinct engineers**.
+- AI diagnosis is correct on **≥80%** of the 20+ replayed historical incidents in the eval harness.
+- Median time-to-answer for a `betterlog diagnose` invocation is **<30 seconds**.
+- A **second workflow** (refund or inventory) is instrumented without changing the core data model.
+- At least **one real production incident** at Wilco was resolved faster because of BetterLog, with a named owner who will say so on record.
 
 If we hit 4 of 5, the MVP is a qualified success and we keep iterating. If we hit 2 of 5 or fewer, the hypothesis is wrong and we re-examine before adding scope.
 

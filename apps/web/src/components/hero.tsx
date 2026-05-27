@@ -13,7 +13,7 @@ export function Hero() {
         <PlateHeader
           n="001"
           label="BRAND_INTRO"
-          meta="AI-POWERED · OTEL-NATIVE · v1.1"
+          meta="CASE-LEVEL · OTEL-NATIVE · v1.1"
           className="pt-10"
         />
 
@@ -39,7 +39,7 @@ export function Hero() {
               transition={{ duration: 0.22, delay: 0.05, ease: EASE_SNAP }}
               className="mt-6 max-w-[560px] font-sans text-[18px] leading-[1.4] text-[var(--color-foreground)] sm:text-[20px]"
             >
-              AI-powered workflow diagnosis.
+              Case-level workflow diagnosis.
               <br />
               Root cause. Context. Action.
             </motion.p>
@@ -50,9 +50,9 @@ export function Hero() {
               transition={{ duration: 0.22, delay: 0.1, ease: EASE_SNAP }}
               className="mt-6 max-w-[540px] text-[15.5px] leading-[1.55] text-[var(--color-foreground-subtle)]"
             >
-              BetterLog maps OpenTelemetry traces onto named business workflows. When something
-              fails, an LLM agent translates the trace into one plain-language explanation —
-              readable by the engineer who built it{" "}
+              Engineers declare workflow steps; BetterLog stitches them into named business
+              workflows on top of OpenTelemetry. When something fails, the result is one
+              plain-language explanation — readable by the engineer who built it{" "}
               <em className="text-[var(--color-foreground)] not-italic">and</em> the ops person
               getting the Slack message at 2&nbsp;AM.
             </motion.p>
