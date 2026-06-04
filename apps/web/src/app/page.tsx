@@ -9,7 +9,7 @@ import { Footer } from "@/components/footer";
 
 export default function Page() {
   return (
-    <main className="relative min-h-dvh bg-[var(--color-background)]">
+    <main className="relative min-h-dvh bg-[var(--color-paper)]">
       <Nav />
       <Hero />
       <WorkflowSection />

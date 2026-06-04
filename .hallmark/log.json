@@ -1,0 +1,19 @@
+[
+  {
+    "date": "2026-06-02",
+    "macrostructure": "Workbench",
+    "theme": "Coral",
+    "theme_axes": "light / geometric-sans / warm",
+    "enrichment": "Tier-A CSS art",
+    "brief": "BetterLog marketing site — theme pivot to Coral catalog",
+    "scope": "app"
+  },
+  {
+    "date": "2026-06-02",
+    "macrostructure": "Workbench",
+    "theme": "BetterLog brutalist_grid",
+    "enrichment": "Tier-A CSS art",
+    "brief": "BetterLog marketing site — full app redesign, alignment + business context",
+    "scope": "app"
+  }
+]

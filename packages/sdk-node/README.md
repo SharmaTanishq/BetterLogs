@@ -64,6 +64,7 @@ Full options tables, error-propagation semantics, and the cross-process / BYO-Op
 - **`withWorkflow` doesn't auto-fail** if you catch the error inside the callback. Re-throw if the failure means the business outcome failed — that's the trigger for failure-embedding similarity search.
 - **Bring-your-own OpenTelemetry**: if you already have a tracer provider registered, don't call `init()`. `withWorkflow` / `recordStep` use the global tracer and will piggyback on your existing exporter.
 - **Orphan steps are dropped**. `recordStep` outside an active `withWorkflow` emits a span without `betterlog.workflow.id`; the API parser silently skips it. Always wrap.
+- **Step spans are held until the workflow ends.** `init()` wraps the OTLP exporter in a `WorkflowAwareSpanProcessor` so step spans never reach the API before their parent workflow span. Without this, slow workflows (agent runs that take longer than `BatchSpanProcessor`'s 5s scheduled flush) ship orphan step batches that the API rejects on FK violation. If you bring your own OpenTelemetry pipeline, you opt out of this — see [the troubleshooting note in `docs/sdk-getting-started.md`](../../docs/sdk-getting-started.md#troubleshooting) for the workaround.
 
 ## Examples
 

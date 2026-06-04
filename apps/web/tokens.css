@@ -1,0 +1,105 @@
+/* Hallmark · genre: modern-minimal · theme: Coral · design-system: design.md
+ * macrostructure: Workbench (marketing) · tone: utilitarian · anchor hue: warm-coral
+ * paper: light · display: geometric-sans (Inter Tight) · accent: warm · designed-as-app
+ * pre-emit critique: P5 H4 E5 S5 R4 V4
+ */
+:root {
+  /* Paper band — light, warm peach undertone (hue 38) */
+  --color-paper: oklch(98% 0.012 38);
+  --color-paper-2: oklch(96% 0.014 38);
+  --color-paper-3: oklch(93% 0.016 38);
+
+  /* Ink — warm-tinted, never pure black */
+  --color-ink: oklch(18% 0.02 38);
+  --color-ink-2: oklch(32% 0.018 38);
+  --color-muted: oklch(52% 0.014 38);
+  --color-neutral: oklch(40% 0.012 38);
+
+  /* Rules & surfaces */
+  --color-rule: oklch(90% 0.012 38);
+  --color-rule-2: oklch(82% 0.014 38);
+  --color-border: oklch(82% 0.014 38);
+  --color-surface: oklch(100% 0.004 38);
+  --color-surface-inset: oklch(94% 0.014 38);
+  --color-void: oklch(20% 0.022 38);
+  --color-concrete: oklch(88% 0.012 38);
+  --color-concrete-bright: oklch(78% 0.012 38);
+
+  /* Coral accent — CTAs, focus, selected nodes only */
+  --color-accent: oklch(62% 0.19 38);
+  --color-accent-ink: oklch(99% 0.005 38);
+  --color-focus: oklch(58% 0.20 38);
+  --color-trace: oklch(58% 0.12 165);
+  --color-alert: oklch(58% 0.20 28);
+
+  /* Legacy aliases */
+  --color-background: var(--color-paper);
+  --color-foreground: var(--color-ink);
+  --color-foreground-muted: var(--color-ink-2);
+  --color-foreground-subtle: var(--color-muted);
+  --color-signal: var(--color-accent);
+  --color-hairline: oklch(18% 0.02 38 / 0.1);
+
+  /* Typography — Inter Tight + Inter (Coral / modern-minimal pairing) */
+  --font-display: var(--font-inter-tight), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  --display-weight: 700;
+  --display-tracking: -0.025em;
+  --body-tracking: -0.01em;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.25rem;
+  --text-4xl: clamp(2.125rem, 3.5vw + 0.5rem, 3.75rem);
+  --text-display: clamp(2.75rem, 5.5vw + 0.75rem, 4.25rem);
+  --text-display-s: clamp(2.25rem, 4.5vw + 0.5rem, 3.5rem);
+  --text-title: clamp(1.625rem, 1.5vw + 0.75rem, 2rem);
+  --text-title-sm: clamp(1.375rem, 1vw + 0.65rem, 1.625rem);
+  --text-hero: clamp(3.5rem, 8vw + 0.5rem, 6.5rem);
+
+  /* Spacing — 4pt scale */
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs: 0.75rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  --space-2xl: 4.5rem;
+  --space-3xl: 6rem;
+  --space-section: clamp(4rem, 8vw, 7rem);
+
+  /* Layout */
+  --container-content: 72rem;
+  --container-prose: 34rem;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-snap: cubic-bezier(0.2, 0, 0, 1);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
+  --motion-fast: 80ms;
+  --motion-base: 140ms;
+
+  /* Radii — Coral / modern-minimal: 8px cards & CTAs */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-card: 8px;
+  --radius-input: 8px;
+  --radius-pill: 999px;
+
+  /* Rules */
+  --rule-hair: 1px;
+  --rule-fine: 2px;
+
+  /* Nav pill shadow */
+  --shadow-nav: 0 8px 24px -12px oklch(18% 0.02 38 / 0.14);
+}

@@ -17,7 +17,7 @@ export function Logo({ className, size = 22, caret = false, onDark = false }: Lo
   return (
     <span
       className={cn(
-        "font-display inline-flex select-none items-baseline tracking-[-0.025em]",
+        "font-display inline-flex select-none items-baseline",
         className,
       )}
       style={{ color, fontWeight: 700, fontSize: `${size}px`, lineHeight: 1 }}

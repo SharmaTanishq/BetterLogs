@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
-import { ArrowRight, Check, Loader2 } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 type State = "idle" | "loading" | "success";
@@ -15,12 +15,11 @@ interface WaitlistFormProps {
 }
 
 /**
- * Brutalist CLI-prompt waitlist form. UI-only — simulates submit latency, then
- * morphs to a success state. No network call (per the brief: keep the waitlist
- * surface but no business logic yet).
+ * CLI-prompt waitlist form — mono field row with a terminal-native submit affordance.
+ * UI-only: simulates submit latency, then morphs to success. No network call yet.
  *
- *   $ betterlog waitlist > [ you@yourcompany.com    ] [ Join Waitlist → ]
- *   Press ↵ to join · your data goes to no third parties yet
+ *   $ betterlog waitlist
+ *   > you@yourcompany.com · join →
  */
 export function WaitlistForm({ id = "waitlist", surface = "light", className }: WaitlistFormProps) {
   const [email, setEmail] = useState("");
@@ -34,11 +33,9 @@ export function WaitlistForm({ id = "waitlist", surface = "light", className }: 
   };
 
   const isDark = surface === "dark";
-  const ink = isDark ? "text-[var(--color-paper)]" : "text-[var(--color-foreground)]";
-  const subtle = isDark
-    ? "text-[var(--color-concrete)]/70"
-    : "text-[var(--color-foreground-subtle)]";
-  const border = isDark ? "border-[var(--color-concrete)]" : "border-[var(--color-foreground)]";
+  const ink = isDark ? "text-[var(--color-paper)]" : "text-[var(--color-ink)]";
+  const subtle = isDark ? "text-[var(--color-concrete)]/70" : "text-[var(--color-muted)]";
+  const border = isDark ? "border-[var(--color-concrete)]/40" : "border-[var(--color-border)]";
   const fieldBg = isDark ? "bg-[var(--color-void)]" : "bg-[var(--color-surface)]";
 
   return (
@@ -62,11 +59,11 @@ export function WaitlistForm({ id = "waitlist", surface = "light", className }: 
       {/* Field row */}
       <div
         className={cn(
-          "group flex items-stretch border transition-shadow",
+          "group flex items-stretch overflow-hidden rounded-[var(--radius-card)] border transition-shadow",
           border,
           fieldBg,
-          "focus-within:shadow-[0_0_0_1px_var(--color-foreground)]",
-          isDark && "focus-within:shadow-[0_0_0_1px_var(--color-concrete)]",
+          "focus-within:ring-2 focus-within:ring-[var(--color-focus)] focus-within:ring-offset-2 focus-within:ring-offset-[var(--color-paper)]",
+          isDark && "focus-within:ring-offset-[var(--color-void)]",
         )}
       >
         {/* Mono prefix */}
@@ -112,16 +109,31 @@ export function WaitlistForm({ id = "waitlist", surface = "light", className }: 
               animate={{ opacity: 1 }}
               transition={{ duration: 0.16 }}
               className={cn(
-                "flex flex-1 items-center gap-2 px-3 font-mono text-[14px]",
+                "flex flex-1 flex-col justify-center gap-2 px-3 py-2 font-mono text-[14px]",
                 ink,
               )}
             >
-              <span
-                aria-hidden
-                className="inline-block h-2 w-2 shrink-0 rounded-full"
-                style={{ background: "var(--color-trace)" }}
-              />
-              <span>request_received &middot; we&rsquo;ll be in touch.</span>
+              <div className="flex items-center gap-2">
+                <span
+                  aria-hidden
+                  className="inline-block h-2 w-2 shrink-0 rounded-full"
+                  style={{ background: "var(--color-trace)" }}
+                />
+                <span>request_received · we&rsquo;ll be in touch.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEmail("");
+                  setState("idle");
+                }}
+                className={cn(
+                  "self-start text-[12px] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)]",
+                  subtle,
+                )}
+              >
+                Submit another email
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -129,11 +141,20 @@ export function WaitlistForm({ id = "waitlist", surface = "light", className }: 
         <button
           type="submit"
           disabled={state !== "idle"}
+          data-state={state}
           className={cn(
-            "flex shrink-0 items-center gap-2 border-l px-4 font-sans text-[13px] font-medium transition-colors duration-[var(--motion-base)]",
+            "flex shrink-0 items-center gap-1.5 border-l px-3.5 py-3 font-mono text-[12px] uppercase tracking-[0.1em]",
             border,
-            "bg-[var(--color-signal)] text-white hover:bg-[#1d4ed8] active:translate-y-px",
-            "disabled:cursor-not-allowed disabled:opacity-90",
+            "bg-transparent text-[var(--color-accent)]",
+            "transition-[background-color,color,opacity,transform] duration-[var(--dur-short)] [transition-timing-function:var(--ease-out)]",
+            "hover:bg-[var(--color-paper-3)] hover:text-[var(--color-focus)]",
+            "focus-visible:outline-none focus-visible:bg-[var(--color-paper-3)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus)]",
+            "active:translate-y-px active:bg-[var(--color-surface-inset)]",
+            "disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent disabled:hover:text-[var(--color-accent)]",
+            "data-[state=loading]:text-[var(--color-muted)]",
+            "data-[state=success]:text-[var(--color-trace)]",
+            isDark &&
+              "hover:bg-[var(--color-paper)]/10 hover:text-[var(--color-accent)] focus-visible:bg-[var(--color-paper)]/10 active:bg-[var(--color-paper)]/15",
           )}
           aria-label={
             state === "success" ? "Submitted" : state === "loading" ? "Submitting" : "Join waitlist"
@@ -147,10 +168,12 @@ export function WaitlistForm({ id = "waitlist", surface = "light", className }: 
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.1 }}
-                className="inline-flex items-center gap-2"
+                className="inline-flex items-center gap-1.5 whitespace-nowrap"
               >
-                Join Waitlist
-                <ArrowRight className="h-4 w-4" strokeWidth={2} />
+                join
+                <span aria-hidden className="text-[13px] leading-none">
+                  →
+                </span>
               </motion.span>
             )}
             {state === "loading" && (
@@ -161,7 +184,7 @@ export function WaitlistForm({ id = "waitlist", surface = "light", className }: 
                 exit={{ opacity: 0 }}
                 className="inline-flex items-center"
               >
-                <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2.2} />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" strokeWidth={2.2} />
               </motion.span>
             )}
             {state === "success" && (
@@ -170,10 +193,10 @@ export function WaitlistForm({ id = "waitlist", surface = "light", className }: 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="inline-flex items-center gap-2"
+                className="inline-flex items-center gap-1.5 whitespace-nowrap"
               >
-                <Check className="h-4 w-4" strokeWidth={2.4} />
-                Joined
+                <Check className="h-3.5 w-3.5" strokeWidth={2.4} />
+                ok
               </motion.span>
             )}
           </AnimatePresence>

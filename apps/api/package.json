@@ -22,6 +22,7 @@
     "@ai-sdk/openai": "^3.0.65",
     "@betterlog/shared": "workspace:*",
     "@fastify/type-provider-zod": "^1.0.0",
+    "@fastify/cors": "^11.0.0",
     "ai": "^6.0.191",
     "drizzle-orm": "^0.45.0",
     "fastify": "^5.8.0",

@@ -34,6 +34,7 @@ const STATUS_ERROR = 2;
 
 export function parseExport(req: ExportTraceRequest): ParsedBatch {
   const out: ParsedBatch = { workflows: [], steps: [], skipped: 0 };
+  const workflowIds = new Set<string>();
 
   for (const rs of req.resourceSpans ?? []) {
     const resourceAttrs = attrsToMap(rs.resource?.attributes);
@@ -45,12 +46,22 @@ export function parseExport(req: ExportTraceRequest): ParsedBatch {
 
         if (span.name.startsWith(WORKFLOW_PREFIX)) {
           const row = spanToWorkflow(span, attrs);
-          if (row) out.workflows.push(row);
-          else out.skipped += 1;
+          if (row) {
+            out.workflows.push(row);
+            workflowIds.add(row.id);
+          } else out.skipped += 1;
         } else if (span.name.startsWith(STEP_PREFIX)) {
           const row = spanToStep(span, attrs, defaultService);
-          if (row) out.steps.push(row);
-          else out.skipped += 1;
+          if (row) {
+            out.steps.push(row);
+            if (!workflowIds.has(row.workflowId)) {
+              const stub = stubWorkflowFromStepAttrs(span, attrs, row.workflowId);
+              if (stub) {
+                out.workflows.push(stub);
+                workflowIds.add(stub.id);
+              }
+            }
+          } else out.skipped += 1;
         } else {
           out.skipped += 1;
         }
@@ -59,6 +70,36 @@ export function parseExport(req: ExportTraceRequest): ParsedBatch {
   }
 
   return out;
+}
+
+/** When downstream services ship steps before the root workflow span, stub a row from step attrs. */
+function stubWorkflowFromStepAttrs(
+  span: OtlpSpan,
+  attrs: Map<string, unknown>,
+  workflowId: string,
+): NewWorkflowRow | null {
+  const name = stringAttr(attrs, OTEL_ATTR.workflowName);
+  if (!name) return null;
+
+  const businessKeys: Record<string, string> = {};
+  for (const [key, value] of attrs) {
+    if (key.startsWith(OTEL_ATTR.businessPrefix) && typeof value === "string") {
+      businessKeys[key.slice(OTEL_ATTR.businessPrefix.length)] = value;
+    }
+  }
+
+  return {
+    id: workflowId,
+    name,
+    version: stringAttr(attrs, OTEL_ATTR.workflowVersion) ?? "0.0.0",
+    environment: stringAttr(attrs, OTEL_ATTR.workflowEnvironment) ?? "development",
+    businessKeys,
+    status: "running",
+    startedAt: nanosToDate(span.startTimeUnixNano),
+    endedAt: null,
+    traceId: span.traceId,
+    metadata: null,
+  };
 }
 
 function spanToWorkflow(

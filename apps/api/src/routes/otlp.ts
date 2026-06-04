@@ -22,7 +22,7 @@ export function registerOtlpRoute(app: FastifyInstance, config: Config): void {
     "/v1/otlp/traces",
     { bodyLimit: OTLP_MAX_BODY },
     async (req, reply) => {
-      if (!checkAuth(req, config.BETTERLOG_API_KEY)) {
+      if (!checkAuth(req, config)) {
         return reply.code(401).send({ error: "unauthorized" });
       }
 
@@ -51,10 +51,14 @@ export function registerOtlpRoute(app: FastifyInstance, config: Config): void {
   );
 }
 
-function checkAuth(req: FastifyRequest, expected: string): boolean {
+function checkAuth(req: FastifyRequest, config: Config): boolean {
   const header = req.headers["authorization"];
   if (typeof header !== "string") return false;
   if (!header.toLowerCase().startsWith("bearer ")) return false;
   const presented = header.slice(7).trim();
-  return presented === expected;
+  if (presented === config.BETTERLOG_API_KEY) return true;
+  if (config.BETTERLOG_PUBLISHABLE_API_KEY && presented === config.BETTERLOG_PUBLISHABLE_API_KEY) {
+    return true;
+  }
+  return false;
 }

@@ -52,6 +52,11 @@ export function recordStep<T>(
   if (workflow) {
     attributes[OTEL_ATTR.workflowId] = workflow.id;
     attributes[OTEL_ATTR.workflowName] = workflow.name;
+    if (workflow.businessKeys) {
+      for (const [key, value] of Object.entries(workflow.businessKeys)) {
+        attributes[`${OTEL_ATTR.businessPrefix}${key}`] = value;
+      }
+    }
   }
 
   if (!fn) {

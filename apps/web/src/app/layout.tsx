@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, Inter, IBM_Plex_Mono } from "next/font/google";
+import { Inter_Tight, Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import "@xyflow/react/dist/style.css";
 
-const spaceGrotesk = Space_Grotesk({
+const interTight = Inter_Tight({
   subsets: ["latin"],
-  weight: ["500", "700"],
+  weight: ["500", "600", "700"],
   display: "swap",
-  variable: "--font-space-grotesk",
+  variable: "--font-inter-tight",
 });
 
 const inter = Inter({
@@ -25,14 +25,14 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BetterLog_ — AI-powered workflow diagnosis",
+  title: "BetterLog: Case-level workflow diagnosis",
   description:
-    "Root cause. Context. Action. BetterLog maps OpenTelemetry traces onto named business workflows so engineers and ops teams share one explanation of what failed and what to do next.",
+    "Engineers declare workflow shape with an explicit SDK contract. BetterLog stitches OpenTelemetry spans into named workflows keyed to business identifiers, with plain-language root cause for engineers and ops.",
   metadataBase: new URL("https://betterlog.dev"),
   openGraph: {
-    title: "BetterLog — AI-powered workflow diagnosis",
+    title: "BetterLog: Case-level workflow diagnosis",
     description:
-      "OTel-native workflow diagnosis. Translate distributed trace failures into plain-language root cause analyses both engineers and ops can read.",
+      "OTel-native workflow diagnosis. Answer what happened to order-1234 without reading raw traces, for engineers and ops alike.",
     type: "website",
   },
 };
@@ -40,14 +40,14 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#F2F2EE",
+  themeColor: "#faf8f6",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${inter.variable} ${plexMono.variable}`}
+      className={`${interTight.variable} ${inter.variable} ${plexMono.variable}`}
     >
       <body className="min-h-dvh bg-[var(--color-background)] text-[var(--color-foreground)] antialiased">
         {children}

@@ -11,34 +11,31 @@ interface BaseProps {
   className?: string;
 }
 
-/**
- * Brutalist button. Rectangular, 1px black border, no soft shadow.
- * Hover = hard 1px black outer ring (snap). Press = inset 1px ring + 1px translateY.
- * Use `as="a"` to render an anchor.
- */
+/** Coral / modern-minimal — pill CTAs, coral fill primary, outlined secondary. */
 const base =
   "inline-flex items-center justify-center gap-2 font-sans font-medium " +
-  "border whitespace-nowrap transition-[box-shadow,transform,background-color,color] " +
-  "duration-[var(--motion-base)] [transition-timing-function:var(--ease-snap)] " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-signal)] " +
-  "focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-background)] " +
-  "active:translate-y-px disabled:opacity-50 disabled:pointer-events-none";
+  "border whitespace-nowrap transition-[box-shadow,transform,background-color,color,opacity] " +
+  "duration-[var(--dur-short)] [transition-timing-function:var(--ease-out)] " +
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus)] " +
+  "focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-paper)] " +
+  "active:translate-y-px disabled:opacity-50 disabled:pointer-events-none " +
+  "rounded-[var(--radius-input)]";
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-[var(--color-signal)] text-white border-[var(--color-foreground)] hover:shadow-[0_0_0_1px_var(--color-foreground)]",
+    "bg-[var(--color-accent)] text-[var(--color-accent-ink)] border-transparent hover:opacity-90",
   secondary:
-    "bg-[var(--color-surface)] text-[var(--color-foreground)] border-[var(--color-foreground)] hover:shadow-[0_0_0_1px_var(--color-foreground)]",
+    "bg-[var(--color-surface)] text-[var(--color-ink)] border-[var(--color-border)] hover:border-[var(--color-accent)]",
   ghost:
-    "bg-transparent text-[var(--color-foreground)] border-transparent hover:border-[var(--color-foreground)]",
+    "bg-transparent text-[var(--color-ink)] border-transparent hover:bg-[var(--color-paper-3)]",
   danger:
-    "bg-[var(--color-alert)] text-white border-[var(--color-foreground)] hover:shadow-[0_0_0_1px_var(--color-foreground)]",
+    "bg-[var(--color-alert)] text-[var(--color-accent-ink)] border-transparent hover:opacity-90",
 };
 
 const sizes: Record<Size, string> = {
-  sm: "text-[13px] h-8 px-3 rounded-[2px]",
-  md: "text-[14px] h-10 px-4 rounded-[2px]",
-  lg: "text-[15px] h-11 px-5 rounded-[2px]",
+  sm: "text-[13px] h-8 px-3.5",
+  md: "text-[14px] h-10 px-4",
+  lg: "text-[15px] h-11 px-5",
 };
 
 type ButtonProps = BaseProps &

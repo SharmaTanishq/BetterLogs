@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -17,7 +17,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, X } from "lucide-react";
 import { cn } from "@/lib/cn";
-import { PlateHeader } from "./plate";
+import { PanelChrome, Section, SectionHeader } from "./section";
 
 /* ============================================================================
    Workflow Diagnosis canvas (plate 002).
@@ -33,13 +33,14 @@ interface WorkflowNodeData extends Record<string, unknown> {
   status: Status;
   log: string;
   insight: string;
+  onActivate?: () => void;
 }
 
 const STATUS_COLOR: Record<Status, string> = {
   ok: "var(--color-trace)",
   warn: "var(--color-alert)",
   fail: "var(--color-alert)",
-  pending: "rgba(229,231,234,0.4)",
+  pending: "oklch(78% 0.012 38 / 0.75)",
 };
 
 const STATUS_LABEL: Record<Status, string> = {
@@ -108,7 +109,7 @@ const NODES: Array<{ id: string; data: WorkflowNodeData }> = [
       status: "warn",
       log: "POST /charge · 200\nauth_id=ch_18bx · amount=$148.20 · 640ms\nNOTE: latency p99 elevated (>=500ms for 12m)",
       insight:
-        "Charge succeeded but the service is running degraded. Not the cause of the failure — worth a follow-up.",
+        "Charge succeeded but the service is running degraded. Not the cause of the failure, but worth a follow-up.",
     },
   },
   {
@@ -159,7 +160,7 @@ const initialEdges: Edge[] = NODES.slice(0, -1).map((n, i) => {
    Custom node — 1px-bordered rectangle on the void canvas
    ============================================================================ */
 
-function ServiceNode({ data, selected }: NodeProps<Node<WorkflowNodeData>>) {
+function ServiceNode({ data, selected, id }: NodeProps<Node<WorkflowNodeData>>) {
   const isFail = data.status === "fail";
   const isWarn = data.status === "warn";
 
@@ -174,16 +175,24 @@ function ServiceNode({ data, selected }: NodeProps<Node<WorkflowNodeData>>) {
   return (
     <div
       className={cn(
-        "w-[188px] border bg-[var(--color-void)] px-3 py-2.5 transition-[border-color,box-shadow] duration-[var(--motion-fast)]",
+        "w-[188px] border bg-[var(--color-void)] px-3 py-2.5 transition-[border-color,box-shadow] duration-[var(--motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-void)]",
         border,
       )}
       role="button"
-      tabIndex={-1}
-      aria-label={`${data.service} — ${STATUS_LABEL[data.status]}, ${data.latency}`}
+      tabIndex={0}
+      aria-label={`${data.service}, ${STATUS_LABEL[data.status]}, step ${data.step}, ${data.latency}`}
+      aria-pressed={selected}
+      data-node-id={id}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          data.onActivate?.();
+        }
+      }}
     >
       <Handle type="target" position={Position.Left} />
       <div className="flex items-center justify-between gap-2">
-        <span className="truncate font-mono text-[11px] uppercase tracking-[0.08em] text-[var(--color-concrete)]/70">
+        <span className="truncate font-mono text-[11px] uppercase tracking-[0.08em] text-[var(--color-concrete-bright)]">
           {data.service}
         </span>
         <StatusDot status={data.status} />
@@ -194,7 +203,7 @@ function ServiceNode({ data, selected }: NodeProps<Node<WorkflowNodeData>>) {
       <div
         className="mt-2 font-mono text-[11px] tabular-nums"
         style={{
-          color: isFail || isWarn ? "var(--color-alert)" : "rgba(229,231,234,0.5)",
+          color: isFail || isWarn ? "var(--color-alert)" : "var(--color-concrete-bright)",
         }}
       >
         {data.latency}
@@ -234,15 +243,17 @@ const nodeTypes: NodeTypes = { service: ServiceNode };
 function AgentDrawer({
   selectedId,
   onClear,
+  drawerRef,
 }: {
   selectedId: string | null;
   onClear: () => void;
+  drawerRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const selected = selectedId ? NODE_BY_ID[selectedId] : null;
   const status = selected?.data.status;
 
   return (
-    <div className="flex h-full min-h-[460px] flex-col bg-[var(--color-surface)]">
+    <div ref={drawerRef} className="flex min-h-[420px] flex-col bg-[var(--color-surface)] md:min-h-[460px]">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[var(--color-foreground)] px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
@@ -418,7 +429,7 @@ function AgentBubble({ text }: { text: string }) {
         className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center border border-[var(--color-foreground)] bg-[var(--color-foreground)] font-mono text-[10px] text-[var(--color-paper)]"
         aria-hidden
       >
-        AI
+        BL
       </span>
       <div className="min-w-0 flex-1 border border-[var(--color-foreground)] bg-[var(--color-surface)] px-3 py-2 text-[13px] leading-[1.55] text-[var(--color-foreground)]">
         {text.slice(0, shown)}
@@ -442,53 +453,65 @@ function HintBubble() {
 
 export function WorkflowSection() {
   return (
-    <section
-      id="diagnose"
-      className="relative border-b border-[var(--color-foreground)] bg-[var(--color-background)]"
-    >
-      <div className="mx-auto max-w-[1280px] px-5 py-16 sm:px-8 sm:py-20">
-        <PlateHeader n="002" label="WORKFLOW_DIAGNOSIS" meta="LIVE_DEMO · order-1234" />
-
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <h2
-            className="font-display font-bold leading-[1] tracking-[-0.025em] text-[var(--color-foreground)]"
-            style={{ fontSize: "clamp(32px, 4.4vw, 56px)" }}
-          >
+    <Section id="diagnose">
+      <SectionHeader
+        title={
+          <>
             Make sense of what
             <br />
             actually happened.
-          </h2>
-          <p className="max-w-[440px] text-[15px] leading-[1.55] text-[var(--color-foreground-subtle)]">
+          </>
+        }
+        description={
+          <>
             The graph is auto-generated from your{" "}
-            <code className="bg-[var(--color-concrete)] px-1 py-px font-mono text-[12.5px] text-[var(--color-foreground)]">
+            <code className="bg-[var(--color-surface-inset)] px-1 py-px font-mono text-[12.5px] text-[var(--color-ink)]">
               @workflow
             </code>{" "}
             and{" "}
-            <code className="bg-[var(--color-concrete)] px-1 py-px font-mono text-[12.5px] text-[var(--color-foreground)]">
+            <code className="bg-[var(--color-surface-inset)] px-1 py-px font-mono text-[12.5px] text-[var(--color-ink)]">
               recordStep()
             </code>{" "}
-            annotations — no diagram setup. Click any step to inspect the raw output.
-          </p>
-        </div>
+            annotations. No diagram setup. Click any step to inspect the raw output.
+          </>
+        }
+      />
 
-        <div className="mt-8">
-          <ReactFlowProvider>
-            <WorkflowCanvasInner />
-          </ReactFlowProvider>
-        </div>
+      <div className="mt-10 min-w-0">
+        <ReactFlowProvider>
+          <WorkflowCanvasInner />
+        </ReactFlowProvider>
       </div>
-    </section>
+    </Section>
   );
 }
 
 function WorkflowCanvasInner() {
   const [selectedId, setSelectedId] = useState<string | null>("sku-mapping");
+  const drawerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!selectedId || !drawerRef.current) return;
+    if (!window.matchMedia("(max-width: 767px)").matches) return;
+    drawerRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [selectedId]);
+
+  const handleNodeClick = useCallback((_: unknown, node: Node) => {
+    setSelectedId(node.id);
+  }, []);
 
   const nodes = useMemo<Node<WorkflowNodeData>[]>(
-    () => initialNodes.map((n) => ({ ...n, selected: n.id === selectedId })),
+    () =>
+      initialNodes.map((n) => ({
+        ...n,
+        selected: n.id === selectedId,
+        data: {
+          ...n.data,
+          onActivate: () => setSelectedId(n.id),
+        },
+      })),
     [selectedId],
   );
-
   const edges = useMemo(
     () =>
       initialEdges.map((e) => ({
@@ -505,60 +528,27 @@ function WorkflowCanvasInner() {
     [selectedId],
   );
 
-  const handleNodeClick = useCallback((_: unknown, node: Node) => {
-    setSelectedId(node.id);
-  }, []);
-
   const totalContentWidth = (NODES.length - 1) * NODE_X_STEP + NODE_W + 24;
 
   return (
-    <div className="border border-[var(--color-foreground)] bg-[var(--color-void)]">
-      {/* Tile chrome */}
-      <div className="flex items-center justify-between border-b border-[var(--color-foreground)] bg-[var(--color-void)] px-4 py-2">
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-[var(--color-concrete)]">
-            WORKFLOW
-          </span>
-          <span className="font-mono text-[11px] text-[var(--color-concrete)]/60">
-            order-fulfillment
-          </span>
-          <span className="font-mono text-[11px] text-[var(--color-concrete)]/30">/</span>
-          <span className="font-mono text-[11px] text-[var(--color-concrete)]/60">
-            run_1234
-          </span>
-        </div>
-        <div className="flex items-center gap-3 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--color-concrete)]/60">
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="inline-block h-2 w-2 rounded-full"
-              style={{ background: "var(--color-trace)" }}
-            />
-            SUCCESS
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="inline-block h-2 w-2 rounded-full"
-              style={{ background: "var(--color-alert)" }}
-            />
-            FAILED
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="inline-block h-2 w-2 border-2"
-              style={{
-                borderColor: "var(--color-signal)",
-                borderRadius: 999,
-                background: "transparent",
-              }}
-            />
-            CURRENT
-          </span>
-        </div>
+    <PanelChrome label="Workflow" meta="order-fulfillment / run_1234" onDark className="overflow-visible bg-[var(--color-void)]">
+      <div className="flex flex-wrap items-center justify-end gap-3 border-b border-[var(--color-concrete)] px-4 py-2 font-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--color-concrete)]/60">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-2 w-2 rounded-full bg-[var(--color-trace)]" />
+          Success
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-2 w-2 rounded-full bg-[var(--color-alert)]" />
+          Failed
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-2 w-2 rounded-full border-2 border-[var(--color-accent)] bg-transparent" />
+          Selected
+        </span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_360px]">
-        {/* Canvas */}
-        <div className="relative h-[480px] border-b border-[var(--color-foreground)] md:border-b-0 md:border-r">
+      <div className="grid min-w-0 grid-cols-1 md:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="relative h-[480px] border-b border-[var(--color-concrete)] md:border-b-0 md:border-r">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -583,6 +573,7 @@ function WorkflowCanvasInner() {
             nodesDraggable={false}
             nodesConnectable={false}
             elementsSelectable
+            nodesFocusable
             proOptions={{ hideAttribution: true }}
             translateExtent={[
               [-40, -40],
@@ -600,8 +591,8 @@ function WorkflowCanvasInner() {
         </div>
 
         {/* Drawer */}
-        <AgentDrawer selectedId={selectedId} onClear={() => setSelectedId(null)} />
+        <AgentDrawer selectedId={selectedId} onClear={() => setSelectedId(null)} drawerRef={drawerRef} />
       </div>
-    </div>
+    </PanelChrome>
   );
 }

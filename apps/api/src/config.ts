@@ -10,6 +10,13 @@ const ConfigSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   /** Single hardcoded workspace API key for MVP. Per build-plan §2. */
   BETTERLOG_API_KEY: z.string().min(1).default("blg_dev_localonly"),
+  /** Browser-safe ingest-only key. When unset, browser OTLP ingestion is rejected. */
+  BETTERLOG_PUBLISHABLE_API_KEY: z.string().min(1).default("blg_publishable_dev"),
+  /** Comma-separated origins allowed for browser OTLP (CORS). */
+  BETTERLOG_CORS_ORIGINS: z
+    .string()
+    .default("http://localhost:4200,http://localhost:5173")
+    .transform((v) => v.split(",").map((s) => s.trim()).filter(Boolean)),
 
   /**
    * LLM provider for the diagnose agent. Runtime-selectable per build-plan §2.

@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from "fastify";
+import cors from "@fastify/cors";
 import {
   serializerCompiler,
   validatorCompiler,
@@ -10,6 +11,7 @@ import { createEmbeddingPoller } from "./embeddings/poller.js";
 import { registerDiagnoseRoute } from "./routes/diagnose.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerOtlpRoute } from "./routes/otlp.js";
+import { registerWorkflowRoutes } from "./routes/workflows.js";
 
 export function buildServer(config: Config): FastifyInstance {
   const app = Fastify({
@@ -26,9 +28,16 @@ export function buildServer(config: Config): FastifyInstance {
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
+  void app.register(cors, {
+    origin: config.BETTERLOG_CORS_ORIGINS,
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Authorization", "Content-Type", "traceparent", "tracestate", "baggage"],
+  });
+
   registerHealthRoute(app);
   registerOtlpRoute(app, config);
   registerDiagnoseRoute(app, config);
+  registerWorkflowRoutes(app, config);
 
   if (config.BETTERLOG_EMBEDDING_ENABLED) {
     const poller = createEmbeddingPoller({ db, config, logger: app.log });

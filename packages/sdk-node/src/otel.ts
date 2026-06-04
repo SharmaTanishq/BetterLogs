@@ -11,11 +11,17 @@
  */
 
 import { trace, type Tracer } from "@opentelemetry/api";
+import {
+  CompositePropagator,
+  W3CBaggagePropagator,
+  W3CTraceContextPropagator,
+} from "@opentelemetry/core";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import { resourceFromAttributes } from "@opentelemetry/resources";
 import { BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
 import { NodeTracerProvider } from "@opentelemetry/sdk-trace-node";
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic-conventions";
+import { WorkflowAwareSpanProcessor } from "./workflowAwareSpanProcessor.js";
 
 const TRACER_NAME = "@betterlog/sdk-node";
 const TRACER_VERSION = "0.0.0";
@@ -51,15 +57,23 @@ export function init(options: InitOptions): void {
     headers: { authorization: `Bearer ${apiKey}` },
   });
 
+  // BatchSpanProcessor handles batching, retry, and shutdown. We wrap it in
+  // WorkflowAwareSpanProcessor to hold step spans back until their parent
+  // workflow span ends, so an FK violation on the API side never drops a
+  // batch of orphan steps. See workflowAwareSpanProcessor.ts.
   provider = new NodeTracerProvider({
     resource: resourceFromAttributes({
       [ATTR_SERVICE_NAME]: options.serviceName,
       [ATTR_SERVICE_VERSION]: options.serviceVersion ?? "0.0.0",
     }),
-    spanProcessors: [new BatchSpanProcessor(exporter)],
+    spanProcessors: [new WorkflowAwareSpanProcessor(new BatchSpanProcessor(exporter))],
   });
 
-  provider.register();
+  provider.register({
+    propagator: new CompositePropagator({
+      propagators: [new W3CTraceContextPropagator(), new W3CBaggagePropagator()],
+    }),
+  });
 }
 
 export async function shutdown(): Promise<void> {

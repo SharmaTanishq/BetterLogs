@@ -17,10 +17,11 @@
  * one for cross-process workflows where the ID needs to be deterministic.
  */
 
-import { SpanStatusCode } from "@opentelemetry/api";
+import { context, SpanStatusCode } from "@opentelemetry/api";
 import { ulid } from "ulid";
 import { OTEL_ATTR } from "@betterlog/shared";
-import { withActiveWorkflow } from "./context.js";
+import { attachWorkflowBaggage } from "./baggage.js";
+import { withActiveWorkflow, type WorkflowFrame } from "./context.js";
 import { getTracer } from "./otel.js";
 
 export interface WithWorkflowOptions {
@@ -63,10 +64,19 @@ export async function withWorkflow<T>(
     }
   }
 
+  const frame: WorkflowFrame = {
+    id: workflowId,
+    name: opts.name,
+    version,
+    environment,
+    remote: false,
+    businessKeys: opts.businessKeys,
+  };
+
   const tracer = getTracer();
-  return withActiveWorkflow(
-    { id: workflowId, name: opts.name, version, environment },
-    () =>
+  return withActiveWorkflow(frame, () => {
+    const ctxWithBaggage = attachWorkflowBaggage(context.active(), frame);
+    return context.with(ctxWithBaggage, () =>
       tracer.startActiveSpan(`workflow:${opts.name}`, { attributes }, async (span) => {
         try {
           const result = await fn({ workflowId });
@@ -81,5 +91,6 @@ export async function withWorkflow<T>(
           span.end();
         }
       }),
-  );
+    );
+  });
 }
